@@ -1,0 +1,564 @@
+fileFormatVersion: 2
+guid: edebcda6fe1373a459d90bd1207e97d5
+timeCreated: 1485481918
+licenseType: Free
+TextureImporter:
+  fileIDToRecycleName:
+    21300000: pillar-bkgrd-01
+    21300002: pillar-wire-01
+    21300004: bkgrd
+    21300006: piston-02-back
+    21300008: pillar-blocks
+    21300010: circuit-bkgrd-01
+    21300012: pillar-block-02
+    21300014: floor-3block
+    21300016: cloneChamber
+    21300018: floor-top-01
+    21300020: floor-1block
+    21300022: gear-01
+    21300024: gear-02
+    21300026: gear-03
+    21300028: gear-04
+    21300030: piston
+    21300032: pistonBase
+    21300034: piston-pump-01
+    21300036: piston-pump-02
+    21300038: water-01
+    21300040: water-02
+    21300042: floor-bottom-01
+    21300044: vent-01
+    21300046: cog-01
+    21300048: cog-02
+    21300050: water-03
+    21300052: cloneChamberBack
+    21300054: floor-angle-01
+    21300056: crate-01
+    21300058: crate-01-broken
+    21300060: crate-02
+    21300062: crate-02-broken
+    21300064: bkgrd-02
+    21300066: lightbulb-02
+    21300068: lightbulb-01
+    21300070: lightbulb-03
+    21300072: gravityCenter
+  serializedVersion: 2
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 1
+    linearTexture: 0
+    correctGamma: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+  isReadable: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 0
+  cubemapConvolution: 0
+  cubemapConvolutionSteps: 7
+  cubemapConvolutionExponent: 1.5
+  seamlessCubemap: 0
+  textureFormat: -1
+  maxTextureSize: 2048
+  textureSettings:
+    filterMode: -1
+    aniso: 16
+    mipBias: -1
+    wrapMode: 1
+  nPOTScale: 0
+  lightmap: 0
+  rGBM: 0
+  compressionQuality: 50
+  allowsAlphaSplitting: 0
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spritePixelsToUnits: 100
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  buildTargetSettings: []
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: pillar-bkgrd-01
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 1560
+        width: 472
+        height: 472
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: pillar-wire-01
+      rect:
+        serializedVersion: 2
+        x: 536
+        y: 1552
+        width: 432
+        height: 488
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: bkgrd
+      rect:
+        serializedVersion: 2
+        x: 1024
+        y: 1535
+        width: 520
+        height: 512
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: piston-02-back
+      rect:
+        serializedVersion: 2
+        x: 1572
+        y: 1552
+        width: 168
+        height: 461
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: pillar-blocks
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 1008
+        width: 168
+        height: 472
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: circuit-bkgrd-01
+      rect:
+        serializedVersion: 2
+        x: 200
+        y: 1048
+        width: 208
+        height: 432
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: pillar-block-02
+      rect:
+        serializedVersion: 2
+        x: 408
+        y: 1008
+        width: 104
+        height: 472
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: floor-3block
+      rect:
+        serializedVersion: 2
+        x: 577
+        y: 1270
+        width: 616
+        height: 208
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: cloneChamber
+      rect:
+        serializedVersion: 2
+        x: 217
+        y: 360
+        width: 312
+        height: 480
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: floor-top-01
+      rect:
+        serializedVersion: 2
+        x: 577
+        y: 1218
+        width: 211
+        height: 24
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: floor-1block
+      rect:
+        serializedVersion: 2
+        x: 812
+        y: 1042
+        width: 200
+        height: 208
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: gear-01
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 861
+        width: 131
+        height: 132
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: gear-02
+      rect:
+        serializedVersion: 2
+        x: 147
+        y: 917
+        width: 73
+        height: 70
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: gear-03
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 867
+        width: 110
+        height: 110
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: gear-04
+      rect:
+        serializedVersion: 2
+        x: 361
+        y: 855
+        width: 116
+        height: 140
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: piston
+      rect:
+        serializedVersion: 2
+        x: 541
+        y: 937
+        width: 128
+        height: 99
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: pistonBase
+      rect:
+        serializedVersion: 2
+        x: 537
+        y: 860
+        width: 135
+        height: 68
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: piston-pump-01
+      rect:
+        serializedVersion: 2
+        x: 1753
+        y: 1955
+        width: 88
+        height: 80
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: piston-pump-02
+      rect:
+        serializedVersion: 2
+        x: 1753
+        y: 1903
+        width: 114
+        height: 40
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: water-01
+      rect:
+        serializedVersion: 2
+        x: 1852
+        y: 1979
+        width: 96
+        height: 55
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: water-02
+      rect:
+        serializedVersion: 2
+        x: 1960
+        y: 1928
+        width: 66
+        height: 102
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: floor-bottom-01
+      rect:
+        serializedVersion: 2
+        x: 577
+        y: 1168
+        width: 211
+        height: 24
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: vent-01
+      rect:
+        serializedVersion: 2
+        x: 1034
+        y: 1042
+        width: 200
+        height: 208
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: cog-01
+      rect:
+        serializedVersion: 2
+        x: 1753
+        y: 1810
+        width: 80
+        height: 78
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: cog-02
+      rect:
+        serializedVersion: 2
+        x: 1754
+        y: 1681
+        width: 90
+        height: 119
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: water-03
+      rect:
+        serializedVersion: 2
+        x: 14
+        y: 637
+        width: 200
+        height: 208
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: cloneChamberBack
+      rect:
+        serializedVersion: 2
+        x: 551
+        y: 330
+        width: 379
+        height: 518
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: floor-angle-01
+      rect:
+        serializedVersion: 2
+        x: 1202
+        y: 1269
+        width: 209
+        height: 208
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: crate-01
+      rect:
+        serializedVersion: 2
+        x: 1435
+        y: 1349
+        width: 168
+        height: 168
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: crate-01-broken
+      rect:
+        serializedVersion: 2
+        x: 1608
+        y: 1349
+        width: 168
+        height: 92
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: crate-02
+      rect:
+        serializedVersion: 2
+        x: 1783
+        y: 1425
+        width: 94
+        height: 94
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: crate-02-broken
+      rect:
+        serializedVersion: 2
+        x: 1643
+        y: 1463
+        width: 94
+        height: 44
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: bkgrd-02
+      rect:
+        serializedVersion: 2
+        x: 1433
+        y: 1134
+        width: 200
+        height: 200
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: lightbulb-02
+      rect:
+        serializedVersion: 2
+        x: 1648
+        y: 1176
+        width: 20
+        height: 155
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: lightbulb-01
+      rect:
+        serializedVersion: 2
+        x: 1687
+        y: 1307
+        width: 65
+        height: 24
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    - serializedVersion: 2
+      name: lightbulb-03
+      rect:
+        serializedVersion: 2
+        x: 1768
+        y: 1298
+        width: 53
+        height: 33
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      tessellationDetail: 0
+    outline: []
+  spritePackingTag: 
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
