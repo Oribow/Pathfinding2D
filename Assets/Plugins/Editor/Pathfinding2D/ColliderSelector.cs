@@ -10,7 +10,7 @@ namespace NavGraph.Build
     {
         enum DebugOptions { Raw, RawAndFilled, Non };
 
-        ColliderSet colliderSet { get { return BuildWin.BuildContainer.ColliderSet; } }
+        ColliderSet colliderSet { get { return BuildSave.ColliderSet; } }
 
         ReorderableList colliderListContainer;
 

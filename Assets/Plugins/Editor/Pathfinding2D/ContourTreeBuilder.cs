@@ -9,8 +9,8 @@ namespace NavGraph.Build
     {
         enum DebugOption { Outline, Unoptimized, None }
 
-        ContourTree optimizedTree { get { return BuildWin.BuildContainer.ContourTree; } set { BuildWin.BuildContainer.ContourTree = value; } }
-        ContourTree unoptimizedTree { get { return BuildWin.BuildContainer.unoptimizedTree; } set { BuildWin.BuildContainer.unoptimizedTree = value; } }
+        ContourTree optimizedTree { get { return BuildSave.OptimizedContourTree; } set { BuildSave.OptimizedContourTree = value; } }
+        ContourTree unoptimizedTree { get { return BuildSave.VanilaContourTree; } set { BuildSave.VanilaContourTree = value; } }
 
         [SerializeField]
         DebugOption debugOption;
@@ -18,25 +18,17 @@ namespace NavGraph.Build
 
         protected override void InitThisWindow()
         {
-            if (optimizedTree != null)
-                BuildWin.BuildContainer.optimizedTreeVerts = optimizedTree.ToVertexArray();
-            if (unoptimizedTree != null)
-                BuildWin.BuildContainer.unoptimizedTreeVerts = unoptimizedTree.ToVertexArray();
-        }
-
-        void OnEnable()
-        {
             this.titleContent = new GUIContent("ContourTreeBuilder");
         }
 
         protected override void DrawCustomGUI()
         {
             EditorGUI.BeginChangeCheck();
-            BuildWin.BuildContainer.ContourTreeBuilderData.nodeMergeDistance = EditorGUILayout.Slider("Merge Distance", BuildWin.BuildContainer.ContourTreeBuilderData.nodeMergeDistance, 0.001f, .5f);
-            BuildWin.BuildContainer.ContourTreeBuilderData.maxEdgeDeviation = EditorGUILayout.Slider("Max Edge Deviation", BuildWin.BuildContainer.ContourTreeBuilderData.maxEdgeDeviation, 0.0f, 5f);
+            BuildSave.ContourTreeBuilderData.nodeMergeDistance = EditorGUILayout.Slider("Merge Distance", BuildSave.ContourTreeBuilderData.nodeMergeDistance, 0.001f, .5f);
+            BuildSave.ContourTreeBuilderData.maxEdgeDeviation = EditorGUILayout.Slider("Max Edge Deviation", BuildSave.ContourTreeBuilderData.maxEdgeDeviation, 0.0f, 5f);
             if (EditorGUI.EndChangeCheck())
             {
-                EditorUtility.SetDirty(BuildWin.BuildContainer.ContourTreeBuilderData);
+                EditorUtility.SetDirty(BuildSave.ContourTreeBuilderData);
                 BuildWin.UpdateBuildStepInformation();
             }
 
@@ -50,16 +42,16 @@ namespace NavGraph.Build
         {
             if (debugOption == DebugOption.Outline)
             {
-                if (BuildWin.BuildContainer.optimizedTreeVerts != null)
+                if (BuildSave.OptimizedContourTreeVerts != null)
                 {
-                    DrawPolygonArray(BuildWin.BuildContainer.optimizedTreeVerts);
+                    DrawPolygonArray(BuildSave.OptimizedContourTreeVerts);
                 }
             }
             else if (debugOption == DebugOption.Unoptimized)
             {
-                if (BuildWin.BuildContainer.unoptimizedTreeVerts != null)
+                if (BuildSave.VanilaContourTreeVerts != null)
                 {
-                    DrawPolygonArray(BuildWin.BuildContainer.unoptimizedTreeVerts);
+                    DrawPolygonArray(BuildSave.VanilaContourTreeVerts);
                 }
             }
         }

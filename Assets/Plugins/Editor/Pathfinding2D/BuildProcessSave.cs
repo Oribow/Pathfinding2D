@@ -6,7 +6,7 @@ using NavData2d.Editor;
 namespace NavGraph.Build
 {
     [System.Serializable]
-    public class BuildProcessSave
+    public class BuildProcessSave : ScriptableObject
     {
         internal ColliderSet ColliderSet
         {
@@ -24,65 +24,127 @@ namespace NavGraph.Build
             {
                 if (contourTreeBuilderData == null)
                 {
-                    contourTreeBuilderData = LoadAsset<ContourTreeBuilderData>();
+                    contourTreeBuilderData = CreateAsset<ContourTreeBuilderData>();
                 }
                 return contourTreeBuilderData;
             }
         }
 
-        internal ContourTree ContourTree
+        internal ContourTree VanilaContourTree
         {
             get
             {
-                if (contourTree == null)
+                if (ContourTreeBuilderData.vanilaContourTree == null)
                 {
-                    contourTree = LoadAsset<ContourTree>();
+                    ContourTreeBuilderData.vanilaContourTree = CreateAsset<ContourTree>();
                 }
-                return contourTree;
+                return ContourTreeBuilderData.vanilaContourTree;
             }
             set
             {
-                if (contourTree == null)
+                if (ContourTreeBuilderData.vanilaContourTree == null)
                 {
-                    contourTree = value;
-                    AssetDatabase.AddObjectToAsset(contourTree, assetPath);
+                    ContourTreeBuilderData.vanilaContourTree = value;
+                    AssetDatabase.AddObjectToAsset(ContourTreeBuilderData.vanilaContourTree, assetPath);
                 }
                 else
                 {
-                    ScriptableObject.DestroyImmediate(contourTree, true);
-                    contourTree = value;
-                    AssetDatabase.AddObjectToAsset(contourTree, assetPath);
+                    ScriptableObject.DestroyImmediate(ContourTreeBuilderData.vanilaContourTree, true);
+                    ContourTreeBuilderData.vanilaContourTree = value;
+                    AssetDatabase.AddObjectToAsset(ContourTreeBuilderData.vanilaContourTree, assetPath);
                     AssetDatabase.SaveAssets();
                 }
             }
         }
 
-        /*
+        internal ContourTree OptimizedContourTree
+        {
+            get
+            {
+                if (ContourTreeBuilderData.optimizedContourTree == null)
+                {
+                    ContourTreeBuilderData.optimizedContourTree = CreateAsset<ContourTree>();
+                }
+                return ContourTreeBuilderData.optimizedContourTree;
+            }
+            set
+            {
+                if (ContourTreeBuilderData.optimizedContourTree == null)
+                {
+                    ContourTreeBuilderData.optimizedContourTree = value;
+                    AssetDatabase.AddObjectToAsset(ContourTreeBuilderData.optimizedContourTree, assetPath);
+                }
+                else
+                {
+                    ScriptableObject.DestroyImmediate(ContourTreeBuilderData.optimizedContourTree, true);
+                    ContourTreeBuilderData.optimizedContourTree = value;
+                    AssetDatabase.AddObjectToAsset(ContourTreeBuilderData.optimizedContourTree, assetPath);
+                    AssetDatabase.SaveAssets();
+                }
+            }
+        }
+
         internal ContourTree StrippedContourTree
         {
             get
             {
                 if (strippedContourTree == null)
                 {
-                    strippedContourTree = ScriptableObject.CreateInstance<ContourTree>();
-                    AssetDatabase.AddObjectToAsset(strippedContourTree, assetPath);
+                    strippedContourTree = CreateAsset<ContourTree>();
                 }
                 return strippedContourTree;
             }
-        }*/
-        [SerializeField]
-        internal ContourTree unoptimizedTree;
-        [SerializeField]
-        internal Vector3[][] unoptimizedTreeVerts;
-        [SerializeField]
-        internal Vector3[][] optimizedTreeVerts;
+            set
+            {
+                if (strippedContourTree == null)
+                {
+                    strippedContourTree = value;
+                    AssetDatabase.AddObjectToAsset(strippedContourTree, assetPath);
+                }
+                else
+                {
+                    ScriptableObject.DestroyImmediate(strippedContourTree, true);
+                    strippedContourTree = value;
+                    AssetDatabase.AddObjectToAsset(strippedContourTree, assetPath);
+                    AssetDatabase.SaveAssets();
+                }
+            }
+        }
+
+        internal Vector3[][] VanilaContourTreeVerts
+        {
+            get
+            {
+                if (ContourTreeBuilderData.unoptimizedTreeVerts == null)
+                    ContourTreeBuilderData.unoptimizedTreeVerts = VanilaContourTree.ToVertexArray();
+
+                return ContourTreeBuilderData.unoptimizedTreeVerts;
+            }
+            set
+            {
+                ContourTreeBuilderData.unoptimizedTreeVerts = value;
+            }
+        }
+
+        internal Vector3[][] OptimizedContourTreeVerts
+        {
+            get
+            {
+                if (ContourTreeBuilderData.optimizedTreeVerts == null)
+                    ContourTreeBuilderData.optimizedTreeVerts = OptimizedContourTree.ToVertexArray();
+                return ContourTreeBuilderData.optimizedTreeVerts;
+            }
+            set
+            {
+                ContourTreeBuilderData.optimizedTreeVerts = value;
+            }
+        }
+
+        [System.NonSerialized]
+        ColliderSet colliderSet;
 
         [SerializeField]
         NavAgentGroundWalkerSettings navAgentSettings;
-        [SerializeField]
-        ColliderSet colliderSet;
-        [SerializeField]
-        ContourTree contourTree;
         [SerializeField]
         ContourTree strippedContourTree;
         [SerializeField]
@@ -91,58 +153,69 @@ namespace NavGraph.Build
         NavigationData2D filteredNavData;
         [SerializeField]
         ContourTreeBuilderData contourTreeBuilderData;
+
         public List<MetaJumpLink> jumpLinks;
 
-
+        [System.NonSerialized]
         public string assetPath;
+        [System.NonSerialized]
         public string assetName;
 
         public BuildProcessSave(string path)
         {
             assetPath = path;
             assetName = path.Substring(path.LastIndexOf("/") + 1);
+
+            //Create an Assetfile of this class, if it doesn't exist already.
+            if (!System.IO.File.Exists(System.IO.Path.Combine(Application.dataPath.Remove(Application.dataPath.LastIndexOf("/")), assetPath)))
+            {
+                CreateMainAsset();
+            }
         }
 
-        public void RebuildContourTree()
+        public void BuildVanilaContourTree()
         {
+            if (ColliderSet.colliderList.Count == 0)
+                return;
+
             var collisionGeometrySet = ColliderSet.ToCollisionGeometrySet();
-            unoptimizedTree = ContourTree.Build(collisionGeometrySet);
-            unoptimizedTreeVerts = unoptimizedTree.ToVertexArray();
+            VanilaContourTree = ContourTree.Build(collisionGeometrySet);
+            VanilaContourTreeVerts = VanilaContourTree.ToVertexArray();
         }
 
-        public void TweakContourTree()
+        public void OptimizeVanilaContourTree()
         {
-            ContourTree = ScriptableObject.Instantiate<ContourTree>(unoptimizedTree);
+            if (VanilaContourTree.ContourCount() == 0)
+                return;
 
-            foreach (var node in ContourTree)
+            OptimizedContourTree = ScriptableObject.Instantiate<ContourTree>(VanilaContourTree);
+            foreach (var node in OptimizedContourTree)
                 node.contour.Optimize(ContourTreeBuilderData.nodeMergeDistance, ContourTreeBuilderData.maxEdgeDeviation);
-            optimizedTreeVerts = contourTree.ToVertexArray();
-            SceneView.RepaintAll();
+            OptimizedContourTreeVerts = OptimizedContourTree.ToVertexArray();
         }
 
-        T LoadAsset<T>() where T : ScriptableObject
+        T CreateAsset<T>() where T : ScriptableObject
         {
             T asset;
             if (!System.IO.File.Exists(System.IO.Path.Combine(Application.dataPath.Remove(Application.dataPath.LastIndexOf("/")), assetPath)))
             {
-                asset = ScriptableObject.CreateInstance<T>();
-                AssetDatabase.CreateAsset(asset, assetPath);
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-                EditorUtility.FocusProjectWindow();
-                Selection.activeObject = asset;
+                CreateMainAsset();
 
             }
-            else
-            {
-                asset = AssetDatabase.LoadAssetAtPath<T>(assetPath);
-                if (asset == null)
-                {
-                    asset = ScriptableObject.CreateInstance<T>();
-                    AssetDatabase.AddObjectToAsset(asset, assetPath);
-                }
-            }
+            asset = ScriptableObject.CreateInstance<T>();
+            //asset.hideFlags = HideFlags.NotEditable | HideFlags.HideInHierarchy;
+            AssetDatabase.AddObjectToAsset(asset, assetPath);
             return asset;
+        }
+
+        void CreateMainAsset()
+        {
+            this.hideFlags = HideFlags.NotEditable;
+            AssetDatabase.CreateAsset(this, assetPath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            EditorUtility.FocusProjectWindow();
+            Selection.activeObject = this;
         }
 
         void LoadColliderSet()

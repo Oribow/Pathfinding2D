@@ -8,6 +8,7 @@ namespace NavGraph.Build
     {
         
         protected NavGraphBuilderWindow BuildWin { get { return NavGraphBuilderWindow.Instance; } }
+        protected BuildProcessSave BuildSave { get { return BuildWin.BuildContainer; } }
         bool isInitialized;
 
 
@@ -25,6 +26,15 @@ namespace NavGraph.Build
             SceneView.RepaintAll();
         }
 
+        void OnEnable()
+        {
+            if (!isInitialized)
+            {
+                InitThisWindow();
+                isInitialized = true;
+            }
+        }
+
         void OnGUI()
         {
             if (BuildWin == null)
@@ -33,7 +43,7 @@ namespace NavGraph.Build
                 isInitialized = false;
                 return;
             }
-            else if (BuildWin.BuildContainer == null)
+            else if (BuildSave == null)
             {
                 EditorGUILayout.HelpBox("No build container selected.", MessageType.Error);
                 isInitialized = false;
@@ -44,7 +54,15 @@ namespace NavGraph.Build
                 InitThisWindow();
                 isInitialized = true;
             }
-            DrawCustomGUI();
+            try
+            {
+                DrawCustomGUI();
+            }
+            catch (System.Exception e)
+            {
+                this.Close();
+                Debug.LogException(e);
+            }
         }
 
 
@@ -54,13 +72,21 @@ namespace NavGraph.Build
                 EditorWindow.focusedWindow.GetType() != typeof(NavGraphBuilderWindow))
                 SceneView.onSceneGUIDelegate -= this.OnSceneGUI;
 
-            if (BuildWin == null || BuildWin.BuildContainer == null)
+            if (BuildWin == null || BuildSave == null)
                 return;
 
             if (!isInitialized)
                 return;
 
-            DrawCustomSceneGUI(sceneView);
+            try
+            {
+                DrawCustomSceneGUI(sceneView);
+            }
+            catch (System.Exception e)
+            {
+                this.Close();
+                Debug.LogException(e);
+            }
         }
 
         void OnDisable()

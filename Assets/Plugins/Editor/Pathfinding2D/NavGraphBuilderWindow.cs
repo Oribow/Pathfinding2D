@@ -48,7 +48,7 @@ namespace NavGraph.Build
 
             var step1 = buildStepList.GetBuildStepAt(1);
             step1.isEnabled = step0.buildStepStatus != BuildStepUIElement.BuildStepStatus.Notbuilt;
-            if (buildContainer.ContourTree != null)
+            if (buildContainer.VanilaContourTree != null)
             {
                 step1.ClearErrorsWarningsNotifications();
             }
@@ -86,9 +86,13 @@ namespace NavGraph.Build
             if (treeBuilder != null)
                 treeBuilder.Close();
 
-            ColliderSelector selector = EditorWindow.GetWindow<ColliderSelector>();
-            if (selector != null)
-                selector.Close();
+            ColliderSelector colliderSelector = EditorWindow.GetWindow<ColliderSelector>();
+            if (colliderSelector != null)
+                colliderSelector.Close();
+
+            ContourSelector contourSelector = EditorWindow.GetWindow<ContourSelector>();
+            if (contourSelector != null)
+                contourSelector.Close();
 
             AssetDatabase.SaveAssets();
         }
@@ -154,7 +158,7 @@ namespace NavGraph.Build
             buildStepList = new BuildStepUIList();
 
             //ColliderSelector
-            BuildStepUIElement uiElement = new BuildStepUIElement("Collider Selector", new string[] { "Configure" });
+            BuildStepUIElement uiElement = new BuildStepUIElement("Collider Selector", new string[] { "New", "Configure" });
             uiElement.SetButtonDownListener((int buttonIndex) =>
             {
                 if (buttonIndex == 0)
@@ -172,16 +176,13 @@ namespace NavGraph.Build
             {
                 if (buttonIndex == 0)
                 {
-                    BuildContainer.RebuildContourTree();
+                    BuildContainer.BuildVanilaContourTree();
                     MarkFollowingStepsOutdated(1);
                     buildStepList.GetBuildStepAt(1).buildStepStatus = BuildStepUIElement.BuildStepStatus.OK;
                 }
                 else if (buttonIndex == 1)
                 {
-                    if (BuildContainer.unoptimizedTree == null)
-                        BuildContainer.RebuildContourTree();
-                    else
-                        BuildContainer.TweakContourTree();
+                    BuildContainer.OptimizeVanilaContourTree();
                     MarkFollowingStepsOutdated(1);
                     buildStepList.GetBuildStepAt(1).buildStepStatus = BuildStepUIElement.BuildStepStatus.OK;
                 }
@@ -191,9 +192,22 @@ namespace NavGraph.Build
                     EditorWindow.GetWindow<ContourTreeBuilder>();
                 }
             });
-            uiElement.AddInformationalNotification(() => { return "Contour count: " + ((buildContainer == null || buildContainer.ContourTree == null) ? "0" : buildContainer.ContourTree.ContourCount().ToString()); });
-            uiElement.AddInformationalNotification(() => { return "Unoptimized Vertex count: " + ((buildContainer == null || buildContainer.unoptimizedTree == null) ? "0" : buildContainer.unoptimizedTree.VertexCount().ToString()); });
-            uiElement.AddInformationalNotification(() => { return "Optimized Vertex count: " + ((buildContainer == null || buildContainer.ContourTree == null) ? "0" : buildContainer.ContourTree.VertexCount().ToString()); });
+            uiElement.AddInformationalNotification(() => { return "Unoptimized Contour count: " + ((buildContainer == null || buildContainer.VanilaContourTree == null) ? "0" : buildContainer.VanilaContourTree.ContourCount().ToString()); });
+            uiElement.AddInformationalNotification(() => { return "Unoptimized Vertex count: " + ((buildContainer == null || buildContainer.VanilaContourTree == null) ? "0" : buildContainer.VanilaContourTree.VertexCount().ToString()); });
+            uiElement.AddInformationalNotification(() => { return "Optimized Contour count: " + ((buildContainer == null || buildContainer.OptimizedContourTree == null) ? "0" : buildContainer.OptimizedContourTree.ContourCount().ToString()); });
+            uiElement.AddInformationalNotification(() => { return "Optimized Vertex count: " + ((buildContainer == null || buildContainer.OptimizedContourTree == null) ? "0" : buildContainer.OptimizedContourTree.VertexCount().ToString()); });
+            buildStepList.AddBuildStep(uiElement);
+
+            //ContourSelector
+            uiElement = new BuildStepUIElement("Contour Selector", new string[] { "Configure" });
+            uiElement.SetButtonDownListener((int buttonIndex) =>
+            {
+                if (buttonIndex == 0)
+                {
+                    //Launch the configuration window
+                    EditorWindow.GetWindow<ContourSelector>();
+                }
+            });
             buildStepList.AddBuildStep(uiElement);
         }
     }

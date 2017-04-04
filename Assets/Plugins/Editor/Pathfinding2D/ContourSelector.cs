@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using Utility;
@@ -6,25 +7,8 @@ using Utility;
 namespace NavGraph.Build
 {
     [System.Serializable]
-    class OutlineSelector// : ITab
-    {/*
-        public bool IsEnabled
-        {
-            get
-            {
-                return navBuilder.GlobalBuildContainer != null && navBuilder.GlobalBuildContainer.contourTree != null;
-            }
-        }
-
-        public string TabHeader
-        {
-            get
-            {
-                return "OutlineSelector";
-            }
-        }
-
-        INavDataBuilder navBuilder;
+    class ContourSelector : BuildStepWindow
+    {
         [SerializeField]
         ContourOptionHolder[] contourOptions;
         [SerializeField]
@@ -37,12 +21,12 @@ namespace NavGraph.Build
 
         bool mouseClicked;
 
-        public OutlineSelector(INavDataBuilder navBuilder)
+        protected override void InitThisWindow()
         {
-            this.navBuilder = navBuilder;
+            CreateContourOptionTree();
         }
 
-        public void OnGUI()
+        protected override void DrawCustomGUI()
         {
             if (Event.current.type == EventType.Repaint)
             {
@@ -58,7 +42,7 @@ namespace NavGraph.Build
 
             globalScrollPos = EditorGUILayout.BeginScrollView(globalScrollPos);
 
-            DoContourLayout(navBuilder.GlobalBuildContainer.contourTree.FirstNode.children, ref contourIndex, childrenCanIgnoreUse);
+            DoContourLayout(BuildSave.VanilaContourTree.FirstNode.children, ref contourIndex, childrenCanIgnoreUse);
 
             EditorGUILayout.EndScrollView();
 
@@ -69,7 +53,23 @@ namespace NavGraph.Build
                 selectedContour = -1;
                 mouseClicked = false;
                 SceneView.RepaintAll();
-                navBuilder.TriggerRepaint();
+                BuildWin.UpdateBuildStepInformation();
+            }
+        }
+
+        protected override void DrawCustomSceneGUI(SceneView sceneView)
+        {
+            if (selectedContour == -1)
+            {
+                int contourIndex = 0;
+                DrawContour(BuildSave.VanilaContourTree.FirstNode.children, ref contourIndex, true);
+            }
+            else
+            {
+                Vector3[] poly = treeVerts[selectedContour];
+                Handles.color = Color.red;
+                Handles.DrawAAPolyLine(4f, poly);
+                Handles.DrawAAPolyLine(4f, poly[0], poly[poly.Length - 1]);
             }
         }
 
@@ -100,7 +100,7 @@ namespace NavGraph.Build
                         selectedContour = contourIndex;
                         mouseClicked = false;
                         SceneView.RepaintAll();
-                        navBuilder.TriggerRepaint();
+                        BuildWin.UpdateBuildStepInformation();
                     }
                 }
                 if (selectedContour == contourIndex)
@@ -119,8 +119,8 @@ namespace NavGraph.Build
                 contourOptions[contourIndex].use = EditorGUILayout.Toggle("Use", contourOptions[contourIndex].use);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    treeVerts = navBuilder.GlobalBuildContainer.contourTree.ToVertexArray();
-                    navBuilder.GlobalBuildContainer.strippedContourTree = StripContourTree(navBuilder.GlobalBuildContainer.contourTree);
+                    treeVerts = BuildSave.VanilaContourTree.ToVertexArray();
+                    //BuildSave. = StripContourTree(BuildSave.ContourTree);
                 }
                 EditorGUILayout.EndHorizontal();
 
@@ -137,38 +137,9 @@ namespace NavGraph.Build
             }
         }
 
-        public void OnSceneGUI(SceneView sceneView)
-        {
-            if (selectedContour == -1)
-            {
-                int contourIndex = 0;
-                DrawContour(navBuilder.GlobalBuildContainer.contourTree.FirstNode.children, ref contourIndex, true);
-            }
-            else
-            {
-                Vector3[] poly = treeVerts[selectedContour];
-                Handles.color = Color.red;
-                Handles.DrawAAPolyLine(4f, poly);
-                Handles.DrawAAPolyLine(4f, poly[0], poly[poly.Length - 1]);
-            }
-        }
-
-        public void OnSelected()
-        {
-            CreateContourOptionTree();
-        }
-
-        public void OnUnselected()
-        {
-            
-        }
-
         void CreateContourOptionTree()
         {
-            int contourCount = 0;
-
-            foreach (var c in navBuilder.GlobalBuildContainer.contourTree)
-                contourCount++;
+            int contourCount = BuildSave.VanilaContourTree.ContourCount();
 
             if (contourOptions == null || contourCount != contourOptions.Length)
             {
@@ -180,7 +151,7 @@ namespace NavGraph.Build
                 }
             }
             if (treeVerts == null || treeVerts.Length != contourCount)
-                treeVerts = navBuilder.GlobalBuildContainer.contourTree.ToVertexArray();
+                treeVerts = BuildSave.VanilaContourTree.ToVertexArray();
         }
 
         void DrawContour(List<ContourNode> src, ref int contourIndex, bool childrenCanIgnoreUse)
@@ -230,13 +201,13 @@ namespace NavGraph.Build
                 {
                     MoveIndex(1);
                     SceneView.RepaintAll();
-                    navBuilder.TriggerRepaint();
+                    BuildWin.UpdateBuildStepInformation();
                 }
                 else if (e.keyCode == KeyCode.LeftArrow)
                 {
                     MoveIndex(-1);
                     SceneView.RepaintAll();
-                    navBuilder.TriggerRepaint();
+                    BuildWin.UpdateBuildStepInformation();
                 }
             }
         }
@@ -323,6 +294,6 @@ namespace NavGraph.Build
         {
             public bool foldout;
             public bool use;
-        }*/
+        }
     }
 }
