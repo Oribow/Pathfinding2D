@@ -11,7 +11,7 @@ namespace NavGraph.Build
     /// Hence a Solid Contour is always the child of a NonSolid Contour and vice versa. The first Contour is an empty NonSolid one.
     /// </summary>
     [Serializable]
-    public class ContourTree : ScriptableObject, IEnumerable<ContourNode>
+    public class ContourTree : IEnumerable<ContourNode>
     {
         [SerializeField]
         ContourNode headNode; // root

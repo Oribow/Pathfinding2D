@@ -8,7 +8,7 @@ using System;
 namespace NavGraph.Build
 {
     [System.Serializable]
-    public class ColliderSet : MonoBehaviour, ISerializationCallbackReceiver
+    public class ColliderSet : ISerializationCallbackReceiver
     {
         public List<Collider2D> colliderList;
         [System.NonSerialized]
@@ -22,7 +22,7 @@ namespace NavGraph.Build
         int decimalPlacesOfCoords;
 
 
-        void Awake()
+        public ColliderSet ()
         {
             if (colliderList == null)
                 colliderList = new List<Collider2D>();

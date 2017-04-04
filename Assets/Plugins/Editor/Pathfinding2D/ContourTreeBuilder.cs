@@ -28,7 +28,6 @@ namespace NavGraph.Build
             BuildSave.ContourTreeBuilderData.maxEdgeDeviation = EditorGUILayout.Slider("Max Edge Deviation", BuildSave.ContourTreeBuilderData.maxEdgeDeviation, 0.0f, 5f);
             if (EditorGUI.EndChangeCheck())
             {
-                EditorUtility.SetDirty(BuildSave.ContourTreeBuilderData);
                 BuildWin.UpdateBuildStepInformation();
             }
 

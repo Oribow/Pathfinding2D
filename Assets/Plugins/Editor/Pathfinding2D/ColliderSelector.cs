@@ -81,7 +81,6 @@ namespace NavGraph.Build
             BuildWin.MarkFollowingStepsOutdated(0);
             BuildWin.UpdateBuildStepInformation();
             SceneView.RepaintAll();
-            EditorUtility.SetDirty(colliderSet);
         }
 
         protected override void DrawCustomSceneGUI(SceneView sceneView)

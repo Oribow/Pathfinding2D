@@ -123,32 +123,31 @@ namespace NavGraph.Build
             Rect backgroundRect = headerRect;
             backgroundRect.yMin = 0;
             EditorGUI.DrawRect(backgroundRect, Color.gray);
+            headerRect.yMin = 2;
+            headerRect.xMin += 10;
             GUI.Label(headerRect, "NavGraph Builder", EditorStyles.largeLabel);
         }
 
         void DrawSaveFileSelection()
         {
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Save File: " + ((buildContainer == null) ? "None" : buildContainer.assetName), EditorStyles.miniLabel);
-            if (GUILayout.Button("Select", EditorStyles.miniButtonMid))
+            if (buildContainer == null)
             {
-                var newContainer = BuildProcessSave.SelectExistingAsset();
-                if (newContainer != null)
-                {
-                    AssetDatabase.SaveAssets();
-                    buildContainer = newContainer;
-                    UpdateBuildStepInformation();
-                }
+                EditorGUILayout.LabelField("Save File: None", EditorStyles.miniLabel);
             }
-            if (GUILayout.Button("New", EditorStyles.miniButtonRight))
+            else
             {
-                var newContainer = BuildProcessSave.SaveAsNewAsset();
-                if (newContainer != null)
+                EditorGUILayout.LabelField("Save File: " + buildContainer.name, EditorStyles.miniLabel);
+            }
+            
+            if (GUILayout.Button("Select", EditorStyles.miniButtonLeft))
+            {
+                EditorWindow.GetWindow<BuildProcessSaveSelectionWindow>().selectionChangedHandler += (BuildProcessSave item) =>
                 {
-                    AssetDatabase.SaveAssets();
-                    buildContainer = newContainer;
-                    UpdateBuildStepInformation();
-                }
+                    buildContainer = item;
+                    Repaint();
+                };
+                
             }
             EditorGUILayout.EndHorizontal();
         }
@@ -158,7 +157,7 @@ namespace NavGraph.Build
             buildStepList = new BuildStepUIList();
 
             //ColliderSelector
-            BuildStepUIElement uiElement = new BuildStepUIElement("Collider Selector", new string[] { "New", "Configure" });
+            BuildStepUIElement uiElement = new BuildStepUIElement("Collider Selector", new string[] { "Configure" });
             uiElement.SetButtonDownListener((int buttonIndex) =>
             {
                 if (buttonIndex == 0)
