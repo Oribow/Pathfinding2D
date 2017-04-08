@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using NavGraph.EditorUI;
+using EditorUI;
 
 namespace NavGraph.Build
 {
@@ -103,7 +104,7 @@ namespace NavGraph.Build
             scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
 
             //Draw Header
-            DrawHeader();
+            DefaultWindowAppearence.DrawHeader("NavGraph - Builder");
 
             //Save file selection
             DrawSaveFileSelection();
@@ -115,17 +116,6 @@ namespace NavGraph.Build
 
             //End main scrollview
             EditorGUILayout.EndScrollView();
-        }
-
-        void DrawHeader()
-        {
-            Rect headerRect = GUILayoutUtility.GetRect(GUIContent.none, CustomGUI.splitter, GUILayout.Height(EditorStyles.largeLabel.lineHeight));
-            Rect backgroundRect = headerRect;
-            backgroundRect.yMin = 0;
-            EditorGUI.DrawRect(backgroundRect, Color.gray);
-            headerRect.yMin = 2;
-            headerRect.xMin += 10;
-            GUI.Label(headerRect, "NavGraph Builder", EditorStyles.largeLabel);
         }
 
         void DrawSaveFileSelection()
@@ -198,15 +188,23 @@ namespace NavGraph.Build
             buildStepList.AddBuildStep(uiElement);
 
             //ContourSelector
-            uiElement = new BuildStepUIElement("Contour Selector", new string[] { "Configure" });
+            uiElement = new BuildStepUIElement("Contour Selector", new string[] { "Build", "Configure" });
             uiElement.SetButtonDownListener((int buttonIndex) =>
             {
                 if (buttonIndex == 0)
+                {
+                    BuildContainer.StripContourTree();
+                    MarkFollowingStepsOutdated(2);
+                    buildStepList.GetBuildStepAt(2).buildStepStatus = BuildStepUIElement.BuildStepStatus.OK;
+                }
+                else if (buttonIndex == 1)
                 {
                     //Launch the configuration window
                     EditorWindow.GetWindow<ContourSelector>();
                 }
             });
+            uiElement.AddInformationalNotification(() => { return "Striped Contour count: " + ((buildContainer == null || buildContainer.StrippedContourTree == null) ? "0" : buildContainer.StrippedContourTree.ContourCount().ToString()); });
+            uiElement.AddInformationalNotification(() => { return "Striped Vertex count: " + ((buildContainer == null || buildContainer.StrippedContourTree == null) ? "0" : buildContainer.StrippedContourTree.VertexCount().ToString()); });
             buildStepList.AddBuildStep(uiElement);
         }
     }

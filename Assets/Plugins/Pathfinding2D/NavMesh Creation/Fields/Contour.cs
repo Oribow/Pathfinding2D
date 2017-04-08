@@ -123,6 +123,14 @@ namespace NavGraph.Build
             return verticies.ToArray();
         }
 
+        public Vector3[] GetVertex3dArray()
+        {
+            Vector3[] result = new Vector3[verticies.Count];
+            for (int iVert = 0; iVert < verticies.Count; iVert++)
+                result[iVert] = verticies[iVert];
+            return result;
+        }
+
         public IEnumerator<Vector2> GetEnumerator()
         {
             return ((IEnumerable<Vector2>)verticies).GetEnumerator();

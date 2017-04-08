@@ -78,6 +78,18 @@ namespace NavGraph.Build
             }
         }
 
+        public StripContourNodeHolder RootContourNodeHolder
+        {
+            get
+            {
+                return rootContourNodeHolder;
+            }
+            set
+            {
+                rootContourNodeHolder = value;
+            }
+        }
+
         public Vector3[][] VanilaContourTreeVerts
         {
             get
@@ -118,6 +130,8 @@ namespace NavGraph.Build
         [SerializeField]
         ContourTree strippedContourTree;
         [SerializeField]
+        StripContourNodeHolder rootContourNodeHolder;
+        [SerializeField]
         NavigationData2D prebuildNavData;
         [SerializeField]
         NavigationData2D filteredNavData;
@@ -152,6 +166,47 @@ namespace NavGraph.Build
             foreach (var node in OptimizedContourTree)
                 node.contour.Optimize(ContourTreeBuilderData.nodeMergeDistance, ContourTreeBuilderData.maxEdgeDeviation);
             OptimizedContourTreeVerts = OptimizedContourTree.ToVertexArray();
+        }
+
+        public void StripContourTree()
+        {
+            strippedContourTree = new ContourTree();
+            StripContours(rootContourNodeHolder, strippedContourTree.FirstNode, true);
+        }
+
+        void StripContours(StripContourNodeHolder parent, ContourNode parentNode, bool childrenCanIgnoreUse)
+        {
+            List<ContourNode> selectedChildren = new List<ContourNode>(parent.children.Length);
+            for (int iNode = 0; iNode < parent.children.Length; iNode++)
+            {
+                if (!parent.children[iNode].strip)
+                {
+                    selectedChildren.Add((ContourNode)parent.children[iNode].contourNode.Clone());
+                    StripContours(parent.children[iNode], selectedChildren[selectedChildren.Count - 1], false);
+                }
+                else if (childrenCanIgnoreUse)
+                {
+                    StripContours(parent.children[iNode], parentNode, true);
+                }
+            }
+            parentNode.children = selectedChildren;
+        }
+
+        public void CreateContourNodeHolderTree()
+        {
+            int contourCount = OptimizedContourTree.ContourCount();
+            rootContourNodeHolder = new StripContourNodeHolder(OptimizedContourTree.FirstNode);
+            InflateNodeHolder(rootContourNodeHolder, OptimizedContourTree.FirstNode);
+        }
+
+        void InflateNodeHolder(StripContourNodeHolder parent, ContourNode parentNode)
+        {
+            parent.children = new StripContourNodeHolder[parentNode.children.Count];
+            for (int iChild = 0; iChild < parentNode.children.Count; iChild++)
+            {
+                parent.children[iChild] = new StripContourNodeHolder(parentNode.children[iChild]);
+                InflateNodeHolder(parent.children[iChild], parentNode.children[iChild]);
+            }
         }
 
         public static BuildProcessSave CreateNewInstance(string name)

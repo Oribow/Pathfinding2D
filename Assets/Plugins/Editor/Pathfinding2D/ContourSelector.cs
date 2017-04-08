@@ -1,8 +1,11 @@
-﻿using System;
+﻿using EditorUI;
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using Utility;
+using System.Collections;
 
 namespace NavGraph.Build
 {
@@ -10,290 +13,193 @@ namespace NavGraph.Build
     class ContourSelector : BuildStepWindow
     {
         [SerializeField]
-        ContourOptionHolder[] contourOptions;
-        [SerializeField]
         Vector2 globalScrollPos;
         [SerializeField]
-        int selectedContour;
+        float boxPercentageOfWindow = 0.6f;
         [SerializeField]
-        Vector3[][] treeVerts;
-        Rect startElement;
+        HierarchyList hierarchyList;
+        [SerializeField]
+        WindowOverlappingBox contourInspector;
+        [SerializeField]
+        Bounds optimizedContourTreeBounds;
+        [SerializeField]
+        float treeAspectRatio;
+        [SerializeField]
+        ContourNode selectedContour;
+        [SerializeField]
+        bool stripedTreeNeedsUpdate;
 
-        bool mouseClicked;
 
         protected override void InitThisWindow()
         {
-            CreateContourOptionTree();
+            BuildSave.CreateContourNodeHolderTree();
+            stripedTreeNeedsUpdate = true;
+
+            hierarchyList = new HierarchyList(BuildSave.RootContourNodeHolder);
+            hierarchyList.elementDimension = new Vector2(30, 30);
+            hierarchyList.elementDrawCallback = DrawContourElement;
+
+            //Chache bounds of tree
+            optimizedContourTreeBounds = BuildSave.OptimizedContourTree.GetBounds();
+
+            treeAspectRatio = optimizedContourTreeBounds.extents.y / optimizedContourTreeBounds.extents.x;
+            contourInspector = new WindowOverlappingBox(WindowOverlappingBox.Placement.UpperRightCorner, false, new Vector2(boxPercentageOfWindow, boxPercentageOfWindow * treeAspectRatio), 3);
+            contourInspector.borderColor = Color.gray;
+            contourInspector.DrawContentCallback += DrawContourInspector;
+            wantsMouseMove = true;
         }
 
         protected override void DrawCustomGUI()
         {
-            if (Event.current.type == EventType.Repaint)
+            if (Event.current.type == EventType.MouseMove)
             {
-                startElement = GUILayoutUtility.GetLastRect();
-                startElement.y = 0;
+                Repaint();
+                return;
             }
-            mouseClicked = Event.current.type == EventType.MouseUp && Event.current.button == 0;
-            HandleEvents();
-
-            int prevIndentLevel = EditorGUI.indentLevel;
-            int contourIndex = 0;
-            bool childrenCanIgnoreUse = true;
-
             globalScrollPos = EditorGUILayout.BeginScrollView(globalScrollPos);
 
-            DoContourLayout(BuildSave.VanilaContourTree.FirstNode.children, ref contourIndex, childrenCanIgnoreUse);
+            EditorGUILayout.BeginHorizontal();
+            var oldSelectedContour = selectedContour;
+            selectedContour = null;
+            hierarchyList.DoLayout();
 
+            float contextWidth = (float)typeof(EditorGUIUtility).GetProperty("contextWidth", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null, null);
+
+            GUILayout.Space(contextWidth * boxPercentageOfWindow);
+
+            EditorGUILayout.EndHorizontal();
+
+            
             EditorGUILayout.EndScrollView();
 
-            EditorGUI.indentLevel = prevIndentLevel;
+            Rect realContentPane = position;
+            realContentPane.width = contextWidth;
+            contourInspector.boxDimensions.y = (treeAspectRatio * contextWidth * boxPercentageOfWindow) / (position.height) + (10 / position.height);
+            contourInspector.DoLayout(realContentPane);
 
-            if (mouseClicked)
-            {
-                selectedContour = -1;
-                mouseClicked = false;
+            if (oldSelectedContour != selectedContour)
                 SceneView.RepaintAll();
-                BuildWin.UpdateBuildStepInformation();
-            }
         }
 
         protected override void DrawCustomSceneGUI(SceneView sceneView)
         {
-            if (selectedContour == -1)
+            if (BuildSave.RootContourNodeHolder == null)
+                return;
+
+            foreach (var holder in BuildSave.RootContourNodeHolder)
             {
-                int contourIndex = 0;
-                DrawContour(BuildSave.VanilaContourTree.FirstNode.children, ref contourIndex, true);
-            }
-            else
-            {
-                Vector3[] poly = treeVerts[selectedContour];
-                Handles.color = Color.red;
-                Handles.DrawAAPolyLine(4f, poly);
+                if (holder.contourNode == selectedContour)
+                    Handles.color = Color.red;
+                else
+                    Handles.color = Color.white;
+
+                Vector3[] poly = holder.contourNode.contour.GetVertex3dArray();
+                Handles.DrawAAPolyLine(4, poly);
                 Handles.DrawAAPolyLine(4f, poly[0], poly[poly.Length - 1]);
             }
         }
 
-        void DoContourLayout(List<ContourNode> src, ref int contourIndex, bool childrenCanIgnoreUse)
+        void DrawContourElement(Rect rect, object data)
         {
-            for (int iNode = 0; iNode < src.Count; iNode++)
+            StripContourNodeHolder nodeHolder = (StripContourNodeHolder)data;
+            ContourNode node = (ContourNode)nodeHolder.contourNode;
+            if (node.contour.VertexCount == 0)
             {
-                if (contourOptions[contourIndex].use)
+                EditorGUI.DrawRect(rect, Color.gray);
+                return;
+            }
+            if (rect.Contains(Event.current.mousePosition))
+            {
+                selectedContour = node;
+                if (Event.current.button == 0 && Event.current.type == EventType.mouseDown)
                 {
-                    childrenCanIgnoreUse = false;
-                    break;
+                    Event.current.Use();
+                    nodeHolder.strip = !nodeHolder.strip;
+                    stripedTreeNeedsUpdate = true;
                 }
             }
-            int indentLevelCache = EditorGUI.indentLevel + 1;
-            bool guiEnabledCache = GUI.enabled;
-            for (int iNode = 0; iNode < src.Count; iNode++)
+            EditorGUI.DrawRect(rect, (nodeHolder.strip) ? Color.gray : Color.black);
+
+            float margin = 2;
+            rect.xMin += margin;
+            rect.yMin += margin;
+            rect.xMax -= margin;
+            rect.yMax -= margin;
+
+
+            float scaleFactor = (node.contour.Bounds.size.x > node.contour.Bounds.size.y) ? rect.width / node.contour.Bounds.size.x : rect.height / node.contour.Bounds.size.y;
+            Vector3 scale = new Vector3(scaleFactor, scaleFactor, 1);
+            Matrix4x4 scaleMat = Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(180, 0, 0), scale);
+
+            Vector3 translation = new Vector3(rect.x, rect.y, 0) - scaleMat.MultiplyPoint(new Vector3(node.contour.Bounds.min.x, node.contour.Bounds.max.y, 0));
+            Matrix4x4 translationMat = Matrix4x4.identity;
+            translationMat.SetColumn(3, new Vector4(translation.x, translation.y, translation.z, 1));
+            Matrix4x4 transfromMat = translationMat * scaleMat;
+
+            Handles.matrix = transfromMat;
+            Handles.color = (nodeHolder.strip) ? Color.white : Color.white;
+            Vector3 prevPoint = node.contour[node.contour.VertexCount - 1];
+            foreach (Vector3 point in node.contour)
             {
-                GUI.enabled = guiEnabledCache;
-                EditorGUI.indentLevel = indentLevelCache;
-                var contour = src[iNode];
-
-                if (mouseClicked && selectedContour != contourIndex)
-                {
-                    Rect box = startElement;
-                    box.y += box.height * contourIndex;
-                    if (box.Contains(Event.current.mousePosition))
-                    {
-                        selectedContour = contourIndex;
-                        mouseClicked = false;
-                        SceneView.RepaintAll();
-                        BuildWin.UpdateBuildStepInformation();
-                    }
-                }
-                if (selectedContour == contourIndex)
-                {
-                    Rect box = startElement;
-                    box.y += box.height * contourIndex;
-                    EditorGUI.DrawRect(box, Color.blue);
-                }
-
-                EditorGUILayout.BeginHorizontal();
-                if (contour.children.Count == 0)
-                    EditorGUILayout.LabelField(contourIndex+"C: " + contour.contour.VertexCount + " Verts");
-                else
-                    contourOptions[contourIndex].foldout = EditorGUILayout.Foldout(contourOptions[contourIndex].foldout, contourIndex + "C: " + contour.contour.VertexCount + " Verts");
-                EditorGUI.BeginChangeCheck();
-                contourOptions[contourIndex].use = EditorGUILayout.Toggle("Use", contourOptions[contourIndex].use);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    treeVerts = BuildSave.VanilaContourTree.ToVertexArray();
-                    //BuildSave. = StripContourTree(BuildSave.ContourTree);
-                }
-                EditorGUILayout.EndHorizontal();
-
-                if (contourOptions[contourIndex].foldout)
-                {
-                    GUI.enabled = childrenCanIgnoreUse || (GUI.enabled && contourOptions[contourIndex].use);
-                    contourIndex++;
-                    DoContourLayout(contour.children, ref contourIndex, childrenCanIgnoreUse);
-                }
-                else
-                {
-                    contourIndex += CountContourChildren(contour) + 1;
-                }
+                Handles.DrawLine(prevPoint, point);
+                prevPoint = point;
             }
         }
 
-        void CreateContourOptionTree()
+        void DrawContourInspector(Rect rect)
         {
-            int contourCount = BuildSave.VanilaContourTree.ContourCount();
+            float margin = 5;
+            Rect marginRect = rect;
+            marginRect.xMin += margin;
+            marginRect.yMin += margin;
+            marginRect.xMax -= margin;
+            marginRect.yMax -= margin;
+            Vector3 scale = new Vector3(marginRect.width / optimizedContourTreeBounds.size.x, marginRect.width / optimizedContourTreeBounds.size.x, 1);
+            Matrix4x4 scaleMat = Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(180, 0, 0), scale);
 
-            if (contourOptions == null || contourCount != contourOptions.Length)
-            {
-                contourOptions = new ContourOptionHolder[contourCount];
-                for (int iContour = 0; iContour < contourCount; iContour++)
-                {
-                    contourOptions[iContour].foldout = true;
-                    contourOptions[iContour].use = true;
-                }
-            }
-            if (treeVerts == null || treeVerts.Length != contourCount)
-                treeVerts = BuildSave.VanilaContourTree.ToVertexArray();
-        }
+            Vector3 translation = new Vector3(marginRect.x, marginRect.y, 0) - scaleMat.MultiplyPoint(new Vector3(optimizedContourTreeBounds.min.x, optimizedContourTreeBounds.max.y, 0));
+            Matrix4x4 translationMat = Matrix4x4.identity;
+            translationMat.SetColumn(3, new Vector4(translation.x, translation.y, translation.z, 1));
+            Matrix4x4 transfromMat = translationMat * scaleMat;
 
-        void DrawContour(List<ContourNode> src, ref int contourIndex, bool childrenCanIgnoreUse)
-        {
-            for (int iNode = 0; iNode < src.Count; iNode++)
+            Handles.matrix = transfromMat;
+
+            foreach (var node in BuildSave.RootContourNodeHolder)
             {
-                if (contourOptions[contourIndex].use)
+                if (node.contourNode == selectedContour)
                 {
-                    childrenCanIgnoreUse = false;
-                    break;
-                }
-            }
-            for (int iNode = 0; iNode < src.Count; iNode++)
-            {
-                if (contourOptions[contourIndex].use)
-                {
-                    DrawContour(contourIndex);
-                    contourIndex++;
-                    DrawContour(src[iNode].children, ref contourIndex, childrenCanIgnoreUse);
-                }
-                else if (childrenCanIgnoreUse)
-                {
-                    contourIndex++;
-                    DrawContour(src[iNode].children, ref contourIndex, childrenCanIgnoreUse);
+                    Handles.color = Color.red;
                 }
                 else
                 {
-                    contourIndex += CountContourChildren(src[iNode]) + 1;
+                    Handles.color = Color.black;
                 }
+                Vector3 prevPoint = node.contourNode.contour[node.contourNode.contour.VertexCount - 1];
+                foreach (Vector3 point in node.contourNode.contour)
+                {
+                    Handles.DrawLine(prevPoint, point);
+                    prevPoint = point;
+                }
+            }
+
+            //Draw size buttons
+            Rect buttonPos = rect;
+            buttonPos.yMin = rect.yMax - EditorGUIUtility.singleLineHeight;
+            buttonPos.xMin = rect.xMax - 42;
+            buttonPos.width = 20;
+            if (GUI.Button(buttonPos, "+"))
+            {
+                boxPercentageOfWindow = Mathf.Min(boxPercentageOfWindow + 0.05f, 0.9f);
+                contourInspector.boxDimensions.x = boxPercentageOfWindow;
+            }
+            buttonPos.x = rect.xMax - 20;
+            if (GUI.Button(buttonPos, "-"))
+            {
+                boxPercentageOfWindow = Mathf.Max(boxPercentageOfWindow - 0.05f, 0.1f);
+                contourInspector.boxDimensions.x = boxPercentageOfWindow;
             }
         }
 
-        void DrawContour(int contourIndex)
-        {
-            Vector3[] poly = treeVerts[contourIndex];
-            Handles.color = DifferentColors.GetColor(contourIndex);
-            Handles.DrawAAPolyLine(4f, poly);
-            Handles.DrawAAPolyLine(4f, poly[0], poly[poly.Length - 1]);
-        }
-
-        void HandleEvents()
-        {
-            Event e = Event.current;
-            if (e.type == EventType.keyDown && -1 != selectedContour)
-            {
-                if (e.keyCode == KeyCode.RightArrow)
-                {
-                    MoveIndex(1);
-                    SceneView.RepaintAll();
-                    BuildWin.UpdateBuildStepInformation();
-                }
-                else if (e.keyCode == KeyCode.LeftArrow)
-                {
-                    MoveIndex(-1);
-                    SceneView.RepaintAll();
-                    BuildWin.UpdateBuildStepInformation();
-                }
-            }
-        }
-
-        void MoveIndex(int dir)
-        {
-            int counter = 0;
-            int newIndex = selectedContour;
-            do
-            {
-                newIndex += dir;
-                if (newIndex < 0)
-                    newIndex = contourOptions.Length - 1;
-                else if (newIndex >= contourOptions.Length)
-                    newIndex = 0;
-                counter++;
-            } while (counter < contourOptions.Length && !contourOptions[newIndex].use);
-
-            if (contourOptions[newIndex].use)
-                selectedContour = newIndex;
-        }
-
-        ContourTree StripContourTree(ContourTree src)
-        {
-            ContourTree result = new ContourTree();
-            int nodeIndex = 0;
-            result.FirstNode.children = StripContours(OribowsUtilitys.DeepCopy<ContourNode[]>(src.FirstNode.children.ToArray(),
-                new OribowsUtilitys.SerializationSurrogateContainer(new BoundsSerializationSurrogate(), typeof(Bounds), new System.Runtime.Serialization.StreamingContext(System.Runtime.Serialization.StreamingContextStates.All)),
-                new OribowsUtilitys.SerializationSurrogateContainer(new Vector2SerializationSurrogate(), typeof(Vector2), new System.Runtime.Serialization.StreamingContext(System.Runtime.Serialization.StreamingContextStates.All))),
-                ref nodeIndex, true);
-            return result;
-        }
-
-        List<ContourNode> StripContours(ContourNode[] src, ref int nodeIndex, bool childrenCanIgnoreUse)
-        {
-            List<ContourNode> selectedChildren = new List<ContourNode>(src.Length);
-            for (int iNode = 0; iNode < src.Length; iNode++)
-            {
-                if (contourOptions[nodeIndex].use)
-                {
-                    childrenCanIgnoreUse = false;
-                    break;
-                }
-            }
-            for (int iNode = 0; iNode < src.Length; iNode++)
-            {
-                if (contourOptions[nodeIndex].use)
-                {
-                    nodeIndex++;
-                    selectedChildren.Add(src[iNode]);
-                    src[iNode].children = StripContours(src[iNode].children.ToArray(), ref nodeIndex, childrenCanIgnoreUse);
-                }
-                else if (childrenCanIgnoreUse)
-                {
-                    nodeIndex++;
-                    selectedChildren.AddRange(StripContours(src[iNode].children.ToArray(), ref nodeIndex, childrenCanIgnoreUse));
-                }
-                else
-                {
-                    nodeIndex += CountContourChildren(src[iNode]) + 1;
-                }
-
-            }
-            return selectedChildren;
-        }
-
-        int CountContourChildren(ContourNode node)
-        {
-            Stack<ContourNode> nodesToProcess = new Stack<ContourNode>(node.children);
-            int contourIndex = 0;
-            while (nodesToProcess.Count > 0)
-            {
-                ContourNode cn = nodesToProcess.Pop();
-                contourIndex++;
-                for (int iOutline = 0; iOutline < cn.children.Count; iOutline++)
-                {
-                    nodesToProcess.Push(cn.children[iOutline]);
-                }
-            }
-            return contourIndex;
-        }
-
-        struct ContourOptionHolder
-        {
-            public bool foldout;
-            public bool use;
-        }
+        
     }
 }

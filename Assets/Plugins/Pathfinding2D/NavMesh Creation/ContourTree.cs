@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System;
 using System.Collections;
 using System.Linq;
+using Utility.ExtensionMethods;
 
 namespace NavGraph.Build
 {
@@ -69,6 +70,21 @@ namespace NavGraph.Build
             return count;
         }
 
+        public Bounds GetBounds()
+        {
+            if (FirstNode.children.Count == 0)
+            {
+                throw new Exception("Tried to get Bounds from Tree without any Nodes.");
+            }
+
+            Bounds result = FirstNode.children[0].contour.Bounds;
+            for (int iChild = 1; iChild < FirstNode.children.Count; iChild++)
+            {
+                result.Encapsulate(FirstNode.children[iChild].contour.Bounds);
+            }
+            return result;
+        }
+
         public IEnumerator<ContourNode> GetEnumerator()
         {
             return new ContourNodeIEnumerator(this);
@@ -112,50 +128,35 @@ namespace NavGraph.Build
             {
                 this.tree = tree;
                 nodePointer = new List<int>(4);
-                nodePointer.Add(-1);
             }
 
             public void Dispose()
             {
-
+                nodePointer = null;
+                tree = null;
             }
 
             public bool MoveNext()
             {
-                if (nodePointer[0] == -1)
+                if (nodePointer.Count == 0)
                 {
                     if (tree.FirstNode.children.Count == 0)
                         return false;
-                    nodePointer[0] = 0;
+                    nodePointer.Add(0);
                     return true;
                 }
 
-                ContourNode result = tree.FirstNode;
-                for (int iNode = 0; iNode < nodePointer.Count - 1; iNode++)
-                {
-                    result = result.children[nodePointer[iNode]];
-                }
-
-                if (result.children[nodePointer[nodePointer.Count - 1]].children.Count > 0) //Current node has children, do them next
+                if (Current.children.Count > 0) //Current node has children, do them next
                 {
                     nodePointer.Add(0);
                     return true;
                 }
 
-                if (nodePointer[nodePointer.Count - 1] + 1 < result.children.Count) //There is another node at the parent level
-                {
-                    nodePointer[nodePointer.Count - 1]++; //increase the index on the parent level
-                    return true;
-                }
-
-                nodePointer.RemoveAt(nodePointer.Count - 1); //remove current node, as it is done!
-                if (nodePointer.Count == 0)
-                    return false;
                 //Get the next node on a higher level
                 int parentIndex = nodePointer.Count - 2;
                 do
                 {
-                    result = tree.FirstNode;
+                    var result = tree.FirstNode;
                     for (int iNode = 0; iNode < nodePointer.Count - 1; iNode++)
                     {
                         result = result.children[nodePointer[iNode]];
@@ -167,7 +168,7 @@ namespace NavGraph.Build
                         return true;
                     }
                     nodePointer.RemoveAt(nodePointer.Count - 1); //remove current node, as it is done!
-                } while ((--parentIndex) >= 0);
+                } while (nodePointer.Count > 0);
 
                 //finished enumerating
                 return false;
@@ -176,7 +177,6 @@ namespace NavGraph.Build
             public void Reset()
             {
                 nodePointer = new List<int>(4);
-                nodePointer.Add(-1);
             }
         }
     }

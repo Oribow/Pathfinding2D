@@ -6,7 +6,7 @@ namespace NavGraph.Build
 {
     public abstract class BuildStepWindow : EditorWindow
     {
-        
+
         protected NavGraphBuilderWindow BuildWin { get { return NavGraphBuilderWindow.Instance; } }
         protected BuildProcessSave BuildSave { get { return BuildWin.BuildContainer; } }
         bool isInitialized;
@@ -15,6 +15,7 @@ namespace NavGraph.Build
         protected abstract void InitThisWindow();
         protected abstract void DrawCustomGUI();
         protected abstract void DrawCustomSceneGUI(SceneView sceneView);
+        protected virtual void OnUpdate() { }
 
         protected virtual void OnFocus()
         {
@@ -65,8 +66,19 @@ namespace NavGraph.Build
             }
         }
 
+        void Update()
+        {
+            if (BuildWin == null || BuildSave == null)
+                return;
 
-        protected virtual void OnSceneGUI(SceneView sceneView)
+            if (!isInitialized)
+                return;
+
+            OnUpdate();
+        }
+
+
+        void OnSceneGUI(SceneView sceneView)
         {
             if (EditorWindow.focusedWindow != this && EditorWindow.focusedWindow != null && EditorWindow.focusedWindow.GetType() != typeof(SceneView) &&
                 EditorWindow.focusedWindow.GetType() != typeof(NavGraphBuilderWindow))
@@ -89,10 +101,12 @@ namespace NavGraph.Build
             }
         }
 
+
         void OnDisable()
         {
             SceneView.onSceneGUIDelegate -= this.OnSceneGUI;
             SceneView.RepaintAll();
+            isInitialized = false;
         }
     }
 }

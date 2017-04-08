@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System;
 using Utility.Polygon2D;
+using Utility;
 
 namespace NavGraph.Build
 {
     [Serializable]
-    public class ContourNode
+    public class ContourNode : ICloneable
     {
         public Contour contour;
         public List<ContourNode> children;
@@ -169,6 +170,13 @@ namespace NavGraph.Build
                 }
                 children.Add(holeNode);
             }
+        }
+
+        public object Clone()
+        {
+            return OribowsUtilitys.DeepCopy<ContourNode>(this,
+               new OribowsUtilitys.SerializationSurrogateContainer(new BoundsSerializationSurrogate(), typeof(Bounds), new System.Runtime.Serialization.StreamingContext(System.Runtime.Serialization.StreamingContextStates.All)),
+               new OribowsUtilitys.SerializationSurrogateContainer(new Vector2SerializationSurrogate(), typeof(Vector2), new System.Runtime.Serialization.StreamingContext(System.Runtime.Serialization.StreamingContextStates.All)));
         }
     }
 }
