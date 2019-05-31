@@ -103,6 +103,8 @@ namespace NavGraph.Build
         {
             StripContourNodeHolder nodeHolder = (StripContourNodeHolder)data;
             ContourNode node = (ContourNode)nodeHolder.contourNode;
+            if (node.contour == null)
+                return;
             if (node.contour.VertexCount == 0)
             {
                 EditorGUI.DrawRect(rect, Color.gray);
@@ -111,7 +113,7 @@ namespace NavGraph.Build
             if (rect.Contains(Event.current.mousePosition))
             {
                 selectedContour = node;
-                if (Event.current.button == 0 && Event.current.type == EventType.mouseDown)
+                if (Event.current.button == 0 && Event.current.type == EventType.MouseDown)
                 {
                     Event.current.Use();
                     nodeHolder.strip = !nodeHolder.strip;

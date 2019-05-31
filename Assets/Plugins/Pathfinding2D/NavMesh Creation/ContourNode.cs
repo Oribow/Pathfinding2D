@@ -8,7 +8,7 @@ namespace NavGraph.Build
 {
     [Serializable]
     public class ContourNode : ICloneable
-    {
+    { 
         public Contour contour;
         public List<ContourNode> children;
         public bool IsSolid { get { return isSolid; } }
@@ -132,6 +132,73 @@ namespace NavGraph.Build
                 wasContourUsed = true;
                 children.Add(new ContourNode(other, true));
             }
+        }
+
+        public bool TryCombineAsNew(Contour other, out ContourNode result)
+        {
+            ContourNode cOther = new ContourNode(other, true);
+
+            Contour[] clippingResult;
+            PolygonClipper.ResultType resultType = PolygonClipper.Compute(contour, cOther.contour, (isSolid) ? PolygonClipper.BoolOpType.UNION : PolygonClipper.BoolOpType.DIFFERENCE, out clippingResult);
+            bool wasContourUsed = true;
+
+            if (resultType == PolygonClipper.ResultType.NoOverlap)
+            {
+                result = null;
+                return false;
+            }
+            result = (ContourNode)this.Clone();
+            if (resultType == PolygonClipper.ResultType.FullyContained)
+            {
+                wasContourUsed = false;
+                cOther.AddSolidContour(result.contour, ref wasContourUsed);
+                result = cOther;
+                return true;
+            }
+            if (resultType == PolygonClipper.ResultType.FullyContains)
+            {
+                if (!isSolid)
+                {
+                    throw new Exception("RootNode should always be solid");
+                }
+                result.AddSolidContour(other, ref wasContourUsed);
+                return true;
+            }
+
+            //SuccesfullyClipped
+            
+            if (isSolid)
+            {
+                result.AddSolidContour(other, ref wasContourUsed);
+                cOther.AddSolidContour(result.contour, ref wasContourUsed);
+                for (int iResult = 0; iResult < clippingResult.Length; iResult++)
+                {
+                    if (clippingResult[iResult].IsSolid())
+                    {
+                        result.contour = clippingResult[iResult];
+                    }
+                    else
+                    {
+                        //Hole creation
+                        ContourNode holeNode = new ContourNode(clippingResult[iResult], false);
+                        result.children.Add(holeNode);
+                    }
+                }
+            }
+            else
+            {
+                if (clippingResult.Length == 1)
+                {
+                    result.contour = clippingResult[0];
+                    result.AddSolidContour(other, ref wasContourUsed);
+                    cOther.AddSolidContour(result.contour, ref wasContourUsed);
+                }
+                else
+                {
+                    HandleSplitting(clippingResult, result, other);
+                }
+            }
+            return true;
         }
 
         private void HandleSplitting(Contour[] holes, ContourNode src, Contour other)
