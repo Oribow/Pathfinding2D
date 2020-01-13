@@ -1,56 +1,79 @@
 ﻿using UnityEngine;
 using System.Linq;
 using UnityEditor;
+using System.Collections.Generic;
+using NavGraph.Build;
 
+[RequireComponent(typeof(RectTransform))]
 public class NavSurface2d : MonoBehaviour
 {
-    private enum CollectObjectsMethod {
+    private enum CollectObjectsMethod
+    {
         All,
         Volume,
         Children
     }
-    private enum UsedGeometryType {
-        Sprites,
-        Colliders2d
-    }
 
-
+    [Header("Filter")]
     [SerializeField]
     private CollectObjectsMethod collectObjects = CollectObjectsMethod.All;
     [SerializeField]
     private LayerMask includeLayers = int.MaxValue;
-    [SerializeField]
-    private UsedGeometryType useGeometry = UsedGeometryType.Colliders2d;
 
+    [Header("Conversion")]
+    [SerializeField, Range(4, 100)]
+    int circleVertCount = 20;
 
-    public void CollectNavGeometry() {
-        IEnu[] navObjects;
-        System.Type geometryType = typeof(Collider2D);
-        switch (useGeometry)
-        {
-            case UsedGeometryType.Colliders2d:
-                geometryType = typeof(Collider2D);
-                break;
-            case UsedGeometryType.Sprites:
-                geometryType = typeof(SpriteRenderer);
-                break;
-        }
+    public void Bake()
+    {
+        GeometrySet geoSet = CollectNavGeometry();
 
+    }
+
+    public GeometrySet CollectNavGeometry()
+    {
+        // 1. Collect collider
+        IEnumerable<Collider2D> navObjects;
         switch (collectObjects)
         {
             case CollectObjectsMethod.All:
-                var allGameObjects = GameObject.FindObjectsOfType<GameObject>();
-                navObjects = (from item in allGameObjects
-                 where GameObjectUtility.AreStaticEditorFlagsSet(item, StaticEditorFlags.NavigationStatic) &&
-                 item.GetComponent(geometryType) != null
-                 select item.GetComponent(geometryType)
+                var allCollider = GameObject.FindObjectsOfType<Collider2D>();
+                navObjects = (from item in allCollider
+                              where
+                              GameObjectUtility.AreStaticEditorFlagsSet(item.gameObject, StaticEditorFlags.NavigationStatic) &&
+                              (item.gameObject.layer & includeLayers) > 0
+                              select item
                  );
 
                 break;
             case CollectObjectsMethod.Volume:
+                var rectTransform = GetComponent<RectTransform>();
+                var overlapedColliders = Physics2D.OverlapBoxAll(rectTransform.position, rectTransform.rect.size, rectTransform.eulerAngles.z, includeLayers);
+                navObjects = (from item in overlapedColliders
+                              where GameObjectUtility.AreStaticEditorFlagsSet(item.gameObject, StaticEditorFlags.NavigationStatic)
+                              select item);
                 break;
             case CollectObjectsMethod.Children:
+                var childCollider = this.GetComponentsInChildren<Collider2D>();
+                navObjects = (from item in childCollider
+                              where
+                              GameObjectUtility.AreStaticEditorFlagsSet(item.gameObject, StaticEditorFlags.NavigationStatic) &&
+                              (item.gameObject.layer & includeLayers) > 0
+                              select item
+                 );
+                break;
+            default:
+                navObjects = Enumerable.Empty<Collider2D>();
+                Debug.LogError("Unkown collections method: " + collectObjects);
                 break;
         }
+
+        // 2. convert collider to geometry
+        GeometrySet geoSet = new GeometrySet(circleVertCount);
+        foreach (var col in navObjects)
+        {
+            geoSet.AddCollider(col);
+        }
+        return geoSet;
     }
 }

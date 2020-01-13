@@ -8,16 +8,6 @@ namespace NavGraph.Build
     [System.Serializable]
     public class BuildProcessSave : MonoBehaviour
     {
-        public ColliderSet ColliderSet
-        {
-            get
-            {
-                if (colliderSet == null)
-                    colliderSet = new ColliderSet();
-                return colliderSet;
-            }
-        }
-
         public ContourTreeBuilderData ContourTreeBuilderData
         {
             get
@@ -120,8 +110,6 @@ namespace NavGraph.Build
         }
 
         [SerializeField]
-        ColliderSet colliderSet;
-        [SerializeField]
         NavAgentGroundWalkerSettings navAgentSettings;
         [SerializeField]
         ContourTree vanilaContourTree;
@@ -147,12 +135,13 @@ namespace NavGraph.Build
 
         public void BuildVanilaContourTree()
         {
+            /*
             if (ColliderSet.colliderList.Count == 0)
                 return;
 
             var collisionGeometrySet = ColliderSet.ToCollisionGeometrySet();
             VanilaContourTree = ContourTree.Build(collisionGeometrySet);
-            VanilaContourTreeVerts = VanilaContourTree.ToVertexArray();
+            VanilaContourTreeVerts = VanilaContourTree.ToVertexArray();*/
         }
 
         public void OptimizeVanilaContourTree()
