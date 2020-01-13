@@ -53,7 +53,7 @@ namespace Utility.Polygon2D
             Contour[] result = new Contour[closedChains.Count];
             for (int iChain = 0; iChain < result.Length; iChain++)
             {
-                result[iChain] = new Contour(closedChains[iChain].chain.ToArray());
+                result[iChain] = new Contour(closedChains[iChain].chain);
             }
             return result;
         }

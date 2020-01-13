@@ -39,7 +39,7 @@ namespace NavGraph.Build
                     if (resultType == PolygonClipper.ResultType.NoOverlap)
                         continue;
 
-                    if (resultType == PolygonClipper.ResultType.FullyContained)
+                    if (resultType == PolygonClipper.ResultType.ClipperPolygonFullyOverlapsSourcePolygon)
                     {
                         bool tmpWasContourUsed = false;
                         cOther.AddSolidContour(cNode.contour, ref tmpWasContourUsed);
@@ -49,7 +49,7 @@ namespace NavGraph.Build
                         continue;
                     }
 
-                    if (resultType == PolygonClipper.ResultType.FullyContains)
+                    if (resultType == PolygonClipper.ResultType.SourcePolygonFullOverlapsClipperPolygon)
                     {
                         if (cNode.isSolid)
                         {
@@ -82,7 +82,7 @@ namespace NavGraph.Build
                                 {
                                     Contour[] holeClippingResult;
                                     PolygonClipper.ResultType holeResultType = PolygonClipper.Compute(holeNode.contour, children[iPrevChild].contour, PolygonClipper.BoolOpType.DIFFERENCE, out holeClippingResult);
-                                    if (holeResultType == PolygonClipper.ResultType.FullyContains)
+                                    if (holeResultType == PolygonClipper.ResultType.SourcePolygonFullOverlapsClipperPolygon)
                                     {
                                         holeNode.children.Add(children[iPrevChild]);
                                         children.RemoveAt(iPrevChild);
@@ -148,14 +148,14 @@ namespace NavGraph.Build
                 return false;
             }
             result = (ContourNode)this.Clone();
-            if (resultType == PolygonClipper.ResultType.FullyContained)
+            if (resultType == PolygonClipper.ResultType.ClipperPolygonFullyOverlapsSourcePolygon)
             {
                 wasContourUsed = false;
                 cOther.AddSolidContour(result.contour, ref wasContourUsed);
                 result = cOther;
                 return true;
             }
-            if (resultType == PolygonClipper.ResultType.FullyContains)
+            if (resultType == PolygonClipper.ResultType.SourcePolygonFullOverlapsClipperPolygon)
             {
                 if (!isSolid)
                 {
@@ -211,13 +211,13 @@ namespace NavGraph.Build
                     Contour[] holeClippingResult;
                     PolygonClipper.ResultType holeResultType = PolygonClipper.Compute(holeNode.contour, src.children[iOldChild].contour, PolygonClipper.BoolOpType.DIFFERENCE, out holeClippingResult);
 
-                    if (holeResultType == PolygonClipper.ResultType.FullyContains)
+                    if (holeResultType == PolygonClipper.ResultType.SourcePolygonFullOverlapsClipperPolygon)
                     {
                         holeNode.children.Add(src.children[iOldChild]);
                         src.children.RemoveAt(iOldChild);
                         iOldChild--;
                     }
-                    else if (holeResultType == PolygonClipper.ResultType.SuccesfullyClipped)
+                    else if (holeResultType == PolygonClipper.ResultType.Overlap)
                     {
                         if (holeClippingResult.Length == 1)
                         {

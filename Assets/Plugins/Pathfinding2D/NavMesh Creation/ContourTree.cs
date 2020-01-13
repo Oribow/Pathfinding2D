@@ -25,7 +25,7 @@ namespace NavGraph.Build
             headNode = new ContourNode(null, false);
         }
 
-        public static ContourTree Build(GeometrySet geometrySet)
+        public static ContourTree Build(PolygonSet geometrySet)
         {
             ContourTree result = new ContourTree();
             //One by one add the polygons and build up the tree

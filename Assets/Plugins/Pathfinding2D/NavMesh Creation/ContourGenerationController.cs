@@ -26,7 +26,7 @@ class ContourGenerationController
         return staticContours;
     }
 
-    ContourNode[] GenerateContourNodes(GeometrySet set)
+    ContourNode[] GenerateContourNodes(PolygonSet set)
     {
         var tree = ContourTree.Build(set);
         ContourNode[] result = new ContourNode[tree.ContourCount()];

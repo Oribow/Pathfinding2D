@@ -26,11 +26,11 @@ public class NavSurface2d : MonoBehaviour
 
     public void Bake()
     {
-        GeometrySet geoSet = CollectNavGeometry();
+        PolygonSet polygonSet = CollectNavigationPolygons();
 
     }
 
-    public GeometrySet CollectNavGeometry()
+    public PolygonSet CollectNavigationPolygons()
     {
         // 1. Collect collider
         IEnumerable<Collider2D> navObjects;
@@ -69,11 +69,11 @@ public class NavSurface2d : MonoBehaviour
         }
 
         // 2. convert collider to geometry
-        GeometrySet geoSet = new GeometrySet(circleVertCount);
+        PolygonSet polygonSet = new PolygonSet(circleVertCount);
         foreach (var col in navObjects)
         {
-            geoSet.AddCollider(col);
+            polygonSet.AddCollider(col);
         }
-        return geoSet;
+        return polygonSet;
     }
 }

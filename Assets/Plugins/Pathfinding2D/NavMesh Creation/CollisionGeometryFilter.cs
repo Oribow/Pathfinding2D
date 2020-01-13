@@ -10,7 +10,7 @@ using UnityEngine;
 //Will also extract the verts from the collider, if requested.
 abstract class CollisionGeometryFilter : MonoBehaviour
 {
-    public abstract GeometrySet GetStaticCollider();
-    public abstract GeometrySet GetDynamicCollider();
-    public abstract GeometrySet GetHighlyDynamicCollider();
+    public abstract PolygonSet GetStaticCollider();
+    public abstract PolygonSet GetDynamicCollider();
+    public abstract PolygonSet GetHighlyDynamicCollider();
 }

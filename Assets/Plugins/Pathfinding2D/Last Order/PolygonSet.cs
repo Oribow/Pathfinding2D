@@ -1,91 +1,62 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System;
+using Utility.Polygon2D;
 
 namespace NavGraph.Build
 {
     /// <summary>
     /// A container that contains a list of polygons and edges, which where probably but not necessarily collected from Colliders.
     /// </summary>
-    public class GeometrySet
+    public class PolygonSet
     {
-        public List<Vector2[]> Polygons { get; }
+        public List<Polygon> Polygons { get; }
         public List<Vector2[]> Edges { get; }
 
         float anglePerCircleVert;
         int circleVertCount;
 
-        public GeometrySet(int circleVertCount)
+        public PolygonSet(int circleVertCount)
         {
             if (circleVertCount < 3)
                 circleVertCount = 3;
             this.circleVertCount = circleVertCount;
             this.anglePerCircleVert = (Mathf.PI * 2) / circleVertCount;
 
-            Polygons = new List<Vector2[]>(50);
+            Polygons = new List<Polygon>(50);
             Edges = new List<Vector2[]>(10);
         }
 
         public void AddCollider(Collider2D col)
         {
             Type cTyp = col.GetType();
-
             if (cTyp == typeof(EdgeCollider2D))
             {
                 AddEdgeCollider((EdgeCollider2D)col);
             }
             else if (cTyp == typeof(BoxCollider2D))
             {
-                AddBoxCollider((BoxCollider2D)col);
+                AddPolygon(Polygon.FromBoxCollider2D((BoxCollider2D)col));
             }
             else if (cTyp == typeof(CircleCollider2D))
             {
-                AddCircleCollider((CircleCollider2D)col);
+                AddPolygon(Polygon.FromCircleCollider2D((CircleCollider2D)col, circleVertCount, anglePerCircleVert));
             }
             else if (cTyp == typeof(PolygonCollider2D))
             {
-                AddPolygonCollider((PolygonCollider2D)col);
-            }
-        }
-
-        public void AddBoxCollider(BoxCollider2D collider)
-        {
-            Vector2 halfSize = collider.size / 2;
-            Vector2[] verts = new Vector2[4];
-
-            verts[0] = collider.transform.TransformPoint(halfSize + collider.offset);
-            verts[1] = collider.transform.TransformPoint(new Vector2(halfSize.x, -halfSize.y) + collider.offset);
-            verts[2] = collider.transform.TransformPoint(-halfSize + collider.offset);
-            verts[3] = collider.transform.TransformPoint(new Vector2(-halfSize.x, halfSize.y) + collider.offset);
-
-            this.Polygons.Add(verts);
-        }
-
-        public void AddCircleCollider(CircleCollider2D collider)
-        {
-            Vector2[] verts = new Vector2[circleVertCount];
-            for (int i = 0; i < circleVertCount; i++)
-            {
-                verts[i] = collider.transform.TransformPoint(new Vector2(collider.radius * Mathf.Sin(anglePerCircleVert * i) + collider.offset.x, collider.radius * Mathf.Cos(anglePerCircleVert * i) + collider.offset.y));
-            }
-            this.Polygons.Add(verts);
-        }
-
-        public void AddPolygonCollider(PolygonCollider2D collider)
-        {
-            Matrix4x4 localToWorld = collider.transform.localToWorldMatrix;
-            for (int iPath = 0; iPath < collider.pathCount; iPath++)
-            {
-                Vector2[] verts = collider.GetPath(iPath);
-                for (int iVert = 0; iVert < verts.Length; iVert++)
+                PolygonCollider2D pCol = (PolygonCollider2D)col;
+                if (Polygons.Capacity < Polygons.Count + pCol.pathCount)
                 {
-                    verts[iVert] = (localToWorld.MultiplyPoint(verts[iVert] + collider.offset));
+                    Polygons.Capacity = Polygons.Count + pCol.pathCount;
                 }
-                this.Polygons.Add(verts);
+                for (int iPath = 0; iPath < pCol.pathCount; iPath++)
+                {
+                    AddPolygon(Polygon.FromPolygonCollider2D(pCol, iPath));
+                }
             }
         }
 
-        public void AddEdgeCollider(EdgeCollider2D collider)
+        private void AddEdgeCollider(EdgeCollider2D collider)
         {
             Matrix4x4 localToWorld = collider.transform.localToWorldMatrix;
             Vector2[] verts = new Vector2[collider.points.Length];
@@ -96,6 +67,49 @@ namespace NavGraph.Build
             this.Edges.Add(verts);
         }
 
+        private void AddPolygon(Polygon newPoly)
+        {
+            // try to merge the new polygon with the existing once
+            foreach (var poly in this.Polygons)
+            {
+                Contour[] result;
+                var resultType = PolygonClipper.Compute(poly.hull, newPoly.hull, PolygonClipper.BoolOpType.UNION, out result);
+
+                switch (resultType) {
+                    case PolygonClipper.ResultType.NoOverlap:
+                        continue;
+
+                    case PolygonClipper.ResultType.ClipperPolygonFullyOverlapsSourcePolygon:
+                        // great, now test, if clipper polygon holes will be shrinked by the source polygons solid area
+
+                        break;
+                    case PolygonClipper.ResultType.SourcePolygonFullOverlapsClipperPolygon:
+                        // great, now test if source polygons holes will be shrinked by the clipper polygons solid area
+                        foreach (var newContour in result)
+                        {
+                            if (newContour.IsAHole())
+                            {
+
+                            }
+                            else { 
+                                // this is the new hull
+                                poly.hull
+                            }
+                        }
+
+                        break;
+
+                    case PolygonClipper.ResultType.Overlap:
+                        // continue with results, but check holes first
+
+                        break;
+                }
+            }
+        }
+
+        private
+
+        /*
         public void DebugVisualization(bool drawWithGizmos)
         {
             Color primaryColor = DefaultValues.Visualization_PrimaryColor;
@@ -155,6 +169,6 @@ namespace NavGraph.Build
                     }
                 }
             }
-        }
+        }*/
     }
 }

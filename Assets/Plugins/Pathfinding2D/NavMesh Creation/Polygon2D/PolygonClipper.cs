@@ -11,47 +11,36 @@ namespace Utility.Polygon2D
         static readonly float fudgeFactor = 0.00001f;
 
         public enum BoolOpType { UNION, DIFFERENCE };
-        public enum ResultType { NoOverlap, SuccesfullyClipped, FullyContained, FullyContains };
+        public enum ResultType { NoOverlap, Overlap, ClipperPolygonFullyOverlapsSourcePolygon, SourcePolygonFullOverlapsClipperPolygon };
 
         enum EdgeType { NORMAL, NON_CONTRIBUTING, SAME_TRANSITION, DIFFERENT_TRANSITION };
         enum PolygonType { SUBJECT, CLIPPING };
 
-        public static ResultType Compute(Contour sp, Contour cp, BoolOpType op, out Contour[] result)
+        public static ResultType Compute(Contour sourcePoly, Contour clipperPoly, BoolOpType op, out Contour result)
         {
             result = null;
 
             //Trivial case: At least one polygon is empty
-            if (sp.ContainsNoVerts || cp.ContainsNoVerts)
+            if (sourcePoly.IsEmpty || clipperPoly.IsEmpty)
             {
-                Debug.Log("One, or both are empty. sp.IsEmpty = " + sp.ContainsNoVerts + ", cp.IsEmpty = " + cp.ContainsNoVerts);
-                if (op == BoolOpType.DIFFERENCE)
-                    result = new Contour[] { sp };
-                else if (op == BoolOpType.UNION)
-                    result = new Contour[] { (sp.ContainsNoVerts) ? cp : sp };
-                //Return null for INTERSECTION and XOR operations;
                 return ResultType.NoOverlap;
             }
 
             //Trivial case: The polygons cannot intersect each other.
-            if (!sp.Bounds.Intersects(cp.Bounds))
+            if (!sourcePoly.BoundingRect.Overlaps(clipperPoly.BoundingRect))
             {
-                if (op == BoolOpType.DIFFERENCE)
-                    result = new Contour[] { sp };
-                else if (op == BoolOpType.UNION)
-                    result = new Contour[] { sp, cp };
-                //Return null for INTERSECTION and XOR operations;
                 return ResultType.NoOverlap;
             }
 
             //Init the event queue with the polygon edges
             //TODO: Better approximation then * 3
-            HeapPriorityQueue<SweepEvent> eventQueue = new HeapPriorityQueue<SweepEvent>((sp.VertexCount + cp.VertexCount) * 3);
-            InsertPolygon(eventQueue, sp, PolygonType.SUBJECT);
-            InsertPolygon(eventQueue, cp, PolygonType.CLIPPING);
+            HeapPriorityQueue<SweepEvent> eventQueue = new HeapPriorityQueue<SweepEvent>((sourcePoly.VertexCount + clipperPoly.VertexCount) * 3);
+            InsertPolygon(eventQueue, sourcePoly, PolygonType.SUBJECT);
+            InsertPolygon(eventQueue, clipperPoly, PolygonType.CLIPPING);
 
             SweepRay sweepRay = new SweepRay(20);
             SweepEvent cEvent;
-            float minRightBounds = Math.Min(sp.Bounds.max.x, cp.Bounds.max.x);
+            float minRightBounds = Math.Min(sourcePoly.BoundingRect.max.x, clipperPoly.BoundingRect.max.x);
             bool changesMade = false;
             Connector connector = new Connector(10);
 
@@ -59,12 +48,12 @@ namespace Utility.Polygon2D
             {
                 cEvent = eventQueue.Dequeue();
 
-                if (op == BoolOpType.DIFFERENCE && cEvent.p.x > sp.Bounds.max.x + fudgeFactor)
+                if (op == BoolOpType.DIFFERENCE && cEvent.p.x > sourcePoly.BoundingRect.max.x + fudgeFactor)
                 {
                     //Exit the loop. No more intersections are to be found.
                     // Create a polygon out of the pointchain
                     result = connector.ToArray();
-                    return EvaluateResult(op, changesMade, result, sp, cp);
+                    return EvaluateResult(op, changesMade, result, sourcePoly, clipperPoly);
                 }
                 if (op == BoolOpType.UNION && cEvent.p.x > minRightBounds + fudgeFactor)
                 {
@@ -81,7 +70,7 @@ namespace Utility.Polygon2D
                         }
                     }
                     result = connector.ToArray();
-                    return EvaluateResult(op, changesMade, result, sp, cp);
+                    return EvaluateResult(op, changesMade, result, sourcePoly, clipperPoly);
                 }
 
                 if (cEvent.left)
@@ -170,7 +159,7 @@ namespace Utility.Polygon2D
                 }
             }
             result = connector.ToArray();
-            return EvaluateResult(op, changesMade, result, sp, cp);
+            return EvaluateResult(op, changesMade, result, sourcePoly, clipperPoly);
         }
 
         private static void InsertPolygon(HeapPriorityQueue<SweepEvent> eventQueue, Contour contour, PolygonType pType)
@@ -441,52 +430,57 @@ namespace Utility.Polygon2D
             eventQueue.Enqueue(l);
         }
 
-        private static ResultType EvaluateResult(BoolOpType op, bool edgesIntersect, Contour[] result, Contour sp, Contour cp)
+        private static ResultType EvaluateResult(BoolOpType op, bool edgesIntersect, Contour result, Contour sp, Contour cp)
         {
-
             switch (op)
             {
                 case BoolOpType.DIFFERENCE:
                     if (edgesIntersect)
-                        return ResultType.SuccesfullyClipped;
-                    else if (result.Length == 1)
+                    {
+                        return ResultType.Overlap;
+                    }
+                    else if (result == null)
                     {
                         return ResultType.NoOverlap;
                     }
-                    if (sp.Bounds.ContainsBounds(cp.Bounds))
+                    else if (sp.BoundingRect.Contains(cp.BoundingRect.min) && sp.BoundingRect.Contains(cp.BoundingRect.max))
                     {
-                        return ResultType.FullyContains;
+                        return ResultType.SourcePolygonFullOverlapsClipperPolygon;
                     }
                     else
-                        return ResultType.FullyContained;
+                    {
+                        return ResultType.ClipperPolygonFullyOverlapsSourcePolygon;
+                    }
                 case BoolOpType.UNION:
                     if (edgesIntersect)
                     {
-                        return ResultType.SuccesfullyClipped;
+                        return ResultType.Overlap;
                     }
-                    else if (result.Length > 1)
+                    else if (result == null)
                     {
                         return ResultType.NoOverlap;
                     }
-                    Bounds expandedBoundsSP = sp.Bounds;
-                    expandedBoundsSP.Expand(new Vector3(fudgeFactor, fudgeFactor, 0));
-                    if (result[0].Bounds.ContainsBounds(expandedBoundsSP))
+                    Rect expSPRect = sp.BoundingRect;
+                    expSPRect.Set(expSPRect.x - fudgeFactor, expSPRect.y - fudgeFactor, expSPRect.width + fudgeFactor, expSPRect.height + fudgeFactor);
+                    if (result.BoundingRect.Contains(expSPRect.min) && result.BoundingRect.Contains(expSPRect.max))
                     {
-                        return ResultType.FullyContained;
+                        return ResultType.ClipperPolygonFullyOverlapsSourcePolygon;
                     }
                     else
-                        return ResultType.FullyContains;
+                    {
+                        return ResultType.SourcePolygonFullOverlapsClipperPolygon;
+                    }
             }
             //Should never come here
             throw new System.Exception("Unknown operation type: " + op);
         }
 
-        public static bool ApproximatelyEqual(Vector2 v1, Vector2 v2)
+        private static bool ApproximatelyEqual(Vector2 v1, Vector2 v2)
         {
             return (v1 - v2).sqrMagnitude < 0.0000000001f;
         }
 
-        public static bool Approximately(float f1, float f2)
+        private static bool Approximately(float f1, float f2)
         {
             return Math.Abs(f1 - f2) < 0.00001f;
         }
