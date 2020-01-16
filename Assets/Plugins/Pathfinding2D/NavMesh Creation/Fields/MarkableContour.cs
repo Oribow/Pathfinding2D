@@ -20,9 +20,9 @@ namespace NavGraph.Build
 
         public MarkableContour(Contour contour, bool isSolid)
         {
-            bounds = contour.Bounds;
+            //bounds = contour.Bounds;
             this.isSolid = isSolid;
-
+            /*
             pointNodeCount = contour.VertexCount;
             PointNode cSeg = new PointNode(contour[0]);
             firstPoint = cSeg;
@@ -33,7 +33,7 @@ namespace NavGraph.Build
                 cSeg = cSeg.Next;
             }
             cSeg.Next = firstPoint;
-            firstPoint.Previous = cSeg;
+            firstPoint.Previous = cSeg;*/
         }
 
         public MarkableContour(SerializableMarkableContour src)

@@ -18,11 +18,11 @@ namespace NavGraph.Build
 
         public float mapPointMaxDeviation = 3;
 
-        public static ExpandedTree Build(ContourTree contourTree, float height)
+        public static ExpandedTree Build(/*ContourTree contourTree,*/ float height)
         {
             //Create initial tree
             ExpandedTree initialTree = ScriptableObject.CreateInstance<ExpandedTree>();
-            initialTree.Init(contourTree);
+            //initialTree.Init(contourTree);
 
             //Mark all Segments, that don't allow the minimum walking height
             initialTree.headNode.MarkContour(height);
@@ -34,13 +34,13 @@ namespace NavGraph.Build
         /// Replacement for a constructor, because a ScriptableObject shouldn't have one.
         /// </summary>
         /// <param name="cTree">The tree from which this tree is build</param>
-        public void Init (ContourTree cTree)
+        public void Init (/*ContourTree cTree*/)
         {
             headNode = new ExpandedNode();
-            foreach (ContourNode cN in cTree.FirstNode.children)
+            /*foreach (ContourNode cN in cTree.FirstNode.children)
             {
                 headNode.children.Add(new ExpandedNode(cN));
-            }
+            }*/
         }
 
         /// <summary>

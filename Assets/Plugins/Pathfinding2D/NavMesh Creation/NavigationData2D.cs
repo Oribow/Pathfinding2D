@@ -23,7 +23,7 @@ namespace NavGraph
         public int version;
 
         public NavNode[] nodes; // sorted by x Value. Min -> Max
-        public NavAgentGroundWalkerSettings navAgentSettings;
+        //public NavAgentGroundWalkerSettings navAgentSettings;
 
         public bool SamplePoint(Vector2 point, out NavPosition navPosition)
         {

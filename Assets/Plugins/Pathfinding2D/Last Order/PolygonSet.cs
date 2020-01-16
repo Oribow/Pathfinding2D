@@ -1,7 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System;
-using Utility.Polygon2D;
+using ClipperLib;
+
+#if use_int32
+  using cInt = Int32;
+#else
+using cInt = System.Int64;
+#endif
 
 namespace NavGraph.Build
 {
@@ -15,16 +21,22 @@ namespace NavGraph.Build
 
         float anglePerCircleVert;
         int circleVertCount;
+        int floatToIntMult;
 
-        public PolygonSet(int circleVertCount)
+        Clipper clipper;
+
+        public PolygonSet(int circleVertCount, int floatToIntMult)
         {
             if (circleVertCount < 3)
                 circleVertCount = 3;
             this.circleVertCount = circleVertCount;
             this.anglePerCircleVert = (Mathf.PI * 2) / circleVertCount;
+            this.floatToIntMult = floatToIntMult;
 
             Polygons = new List<Polygon>(50);
             Edges = new List<Vector2[]>(10);
+
+            clipper = new Clipper();
         }
 
         public void AddCollider(Collider2D col)
@@ -36,11 +48,11 @@ namespace NavGraph.Build
             }
             else if (cTyp == typeof(BoxCollider2D))
             {
-                AddPolygon(Polygon.FromBoxCollider2D((BoxCollider2D)col));
+                AddPolygon(PolygonFromBoxCollider2D((BoxCollider2D)col));
             }
             else if (cTyp == typeof(CircleCollider2D))
             {
-                AddPolygon(Polygon.FromCircleCollider2D((CircleCollider2D)col, circleVertCount, anglePerCircleVert));
+                AddPolygon(PolygonFromCircleCollider2D((CircleCollider2D)col));
             }
             else if (cTyp == typeof(PolygonCollider2D))
             {
@@ -51,7 +63,7 @@ namespace NavGraph.Build
                 }
                 for (int iPath = 0; iPath < pCol.pathCount; iPath++)
                 {
-                    AddPolygon(Polygon.FromPolygonCollider2D(pCol, iPath));
+                    AddPolygon(PolygonFromPolygonCollider2D(pCol, iPath));
                 }
             }
         }
@@ -70,105 +82,124 @@ namespace NavGraph.Build
         private void AddPolygon(Polygon newPoly)
         {
             // try to merge the new polygon with the existing once
-            foreach (var poly in this.Polygons)
-            {
-                Contour[] result;
-                var resultType = PolygonClipper.Compute(poly.hull, newPoly.hull, PolygonClipper.BoolOpType.UNION, out result);
-
-                switch (resultType) {
-                    case PolygonClipper.ResultType.NoOverlap:
-                        continue;
-
-                    case PolygonClipper.ResultType.ClipperPolygonFullyOverlapsSourcePolygon:
-                        // great, now test, if clipper polygon holes will be shrinked by the source polygons solid area
-
-                        break;
-                    case PolygonClipper.ResultType.SourcePolygonFullOverlapsClipperPolygon:
-                        // great, now test if source polygons holes will be shrinked by the clipper polygons solid area
-                        foreach (var newContour in result)
-                        {
-                            if (newContour.IsAHole())
-                            {
-
-                            }
-                            else { 
-                                // this is the new hull
-                                poly.hull
-                            }
-                        }
-
-                        break;
-
-                    case PolygonClipper.ResultType.Overlap:
-                        // continue with results, but check holes first
-
-                        break;
-                }
-            }
-        }
-
-        private
-
-        /*
-        public void DebugVisualization(bool drawWithGizmos)
-        {
-            Color primaryColor = DefaultValues.Visualization_PrimaryColor;
-            Color secondaryColor = DefaultValues.Visualization_SecondaryColor;
-            Color highlightColor = DefaultValues.Visualization_HighlightColor;
-            float indicatorSize = DefaultValues.Visualization_IndicatorSize;
-
-            if (drawWithGizmos)
-            {
-                Gizmos.color = DefaultValues.Visualization_PrimaryColor;
-            }
-
-            //Draw polygons
             for (int iPoly = 0; iPoly < Polygons.Count; iPoly++)
             {
-                for (int iVert = 0; iVert < Polygons[iPoly].Length - 1; iVert++)
+                var poly = Polygons[iPoly];
+                // simple bounds check first
+                if (!poly.BoundingRect.Overlaps(newPoly.BoundingRect))
                 {
-                    if (drawWithGizmos)
-                    {
-                        Gizmos.DrawLine(Polygons[iPoly][iVert], Polygons[iPoly][iVert + 1]);
-                        DebugExtension.DrawCircle(Polygons[iPoly][iVert], Vector3.forward, secondaryColor, indicatorSize);
-                    }
-                    else
-                    {
-                        //DebugExtension.DebugArrow(polygonList[iPoly][iVert], polygonList[iPoly][iVert + 1] - polygonList[iPoly][iVert], primaryColor);
-                        Debug.DrawLine(Polygons[iPoly][iVert], Polygons[iPoly][iVert + 1], primaryColor);
-                        DebugExtension.DebugCircle(Polygons[iPoly][iVert], Vector3.forward, secondaryColor, indicatorSize);
-                    }
+                    continue;
                 }
 
-                if (drawWithGizmos)
+                clipper.Clear();
+                newPoly.AddToClipper(clipper, PolyType.ptClip);
+                poly.AddToClipper(clipper, PolyType.ptSubject);
+
+                PolyTree polyTree = new PolyTree();
+                clipper.Execute(ClipType.ctUnion, polyTree);
+
+                if (polyTree.ChildCount > 1)
                 {
-                    Gizmos.DrawLine(Polygons[iPoly][Polygons[iPoly].Length - 1], Polygons[iPoly][0]);
-                    DebugExtension.DrawCircle(Polygons[iPoly][Polygons[iPoly].Length - 1], Vector3.forward, secondaryColor, indicatorSize);
+                    // bounds overlap, but no actual intersection is happening
+                    continue;
                 }
-                else
+                var hullNode = polyTree.Childs[0];
+                bool holeNodeHasChild = false;
+                foreach (var holeNode in hullNode.Childs)
                 {
-                    Debug.DrawLine(Polygons[iPoly][Polygons[iPoly].Length - 1], Polygons[iPoly][0], primaryColor);
-                    DebugExtension.DebugCircle(Polygons[iPoly][Polygons[iPoly].Length - 1], Vector3.forward, secondaryColor, indicatorSize);
+                    if (holeNode.ChildCount != 0)
+                    {
+                        holeNodeHasChild = true;
+                        break;
+                    }
                 }
+                if (holeNodeHasChild)
+                {
+                    continue;
+                }
+
+                // tree can now contains 1 outer polygon and any number of holes.
+                // we cant know which outer polygon corresponses to the outer polygon
+
+                //overwrite newPoly
+
+                newPoly.hull.SetVerticies(hullNode.Contour);
+
+                newPoly.holes = new List<Contour>(hullNode.ChildCount);
+                foreach (var holeNode in hullNode.Childs)
+                {
+                    newPoly.holes.Add(new Contour(holeNode.Contour));
+                }
+                newPoly.UpdateBounds();
+
+                // delete poly
+                if (iPoly < Polygons.Count - 1)
+                {
+                    Polygons[iPoly] = Polygons[Polygons.Count - 1];
+                }
+                Polygons.RemoveAt(Polygons.Count - 1);
+                iPoly--;
             }
+            Polygons.Add(newPoly);
+        }
 
-            //Draw edges
-            for (int iEdge = 0; iEdge < Edges.Count; iEdge++)
+        public Vector2 IntPointToVector2(IntPoint intPoint)
+        {
+            return new Vector2(intPoint.x / (float)floatToIntMult, intPoint.y / (float)floatToIntMult);
+        }
+
+        public IntPoint Vector2ToIntPoint(Vector2 v)
+        {
+            return new IntPoint(Mathf.RoundToInt(v.x * floatToIntMult), Mathf.RoundToInt(v.y * floatToIntMult));
+        }
+
+        public cInt FloatToCInt(float f)
+        {
+            return Mathf.RoundToInt(f * floatToIntMult);
+        }
+
+        private Polygon PolygonFromBoxCollider2D(BoxCollider2D collider)
+        {
+            Vector2 halfSize = collider.size / 2;
+            List<IntPoint> verts = new List<IntPoint>(4);
+
+            var v = collider.transform.TransformPoint(halfSize + collider.offset);
+            verts.Add(Vector2ToIntPoint(v));
+
+            v = collider.transform.TransformPoint(new Vector2(halfSize.x, -halfSize.y) + collider.offset);
+            verts.Add(Vector2ToIntPoint(v));
+
+            v = collider.transform.TransformPoint(-halfSize + collider.offset);
+            verts.Add(Vector2ToIntPoint(v));
+
+            v = collider.transform.TransformPoint(new Vector2(-halfSize.x, halfSize.y) + collider.offset);
+            verts.Add(Vector2ToIntPoint(v));
+
+            return new Polygon(new Contour(verts));
+        }
+
+        private Polygon PolygonFromCircleCollider2D(CircleCollider2D collider)
+        {
+            List<IntPoint> verts = new List<IntPoint>(circleVertCount);
+            for (int i = 0; i < circleVertCount; i++)
             {
-                for (int iVert = 0; iVert < Edges[iEdge].Length - 1; iVert++)
-                {
-                    if (drawWithGizmos)
-                    {
-                        Gizmos.DrawLine(Polygons[iEdge][iVert], Polygons[iEdge][iVert + 1]);
-                        DebugExtension.DrawCircle(Polygons[iEdge][iVert], Vector3.forward, secondaryColor, indicatorSize);
-                    }
-                    else
-                    {
-                        Debug.DrawLine(Edges[iEdge][iVert], Edges[iEdge][iVert + 1], primaryColor);
-                        DebugExtension.DebugCircle(Edges[iEdge][iVert], Vector3.forward, secondaryColor, indicatorSize);
-                    }
-                }
+                var v = collider.transform.TransformPoint(new Vector2(collider.radius * Mathf.Sin(anglePerCircleVert * i) + collider.offset.x, collider.radius * Mathf.Cos(anglePerCircleVert * i) + collider.offset.y));
+                verts.Add(Vector2ToIntPoint(v));
             }
-        }*/
+
+            return new Polygon(new Contour(verts));
+        }
+
+        private Polygon PolygonFromPolygonCollider2D(PolygonCollider2D collider, int pathIndex)
+        {
+            Matrix4x4 localToWorld = collider.transform.localToWorldMatrix;
+            var path = collider.GetPath(pathIndex);
+            List<IntPoint> verts = new List<IntPoint>(path.Length);
+            for (int iVert = 0; iVert < path.Length; iVert++)
+            {
+                verts.Add(Vector2ToIntPoint(localToWorld.MultiplyPoint(path[iVert] + collider.offset)));
+            }
+            return new Polygon(new Contour(verts));
+        }
     }
 }

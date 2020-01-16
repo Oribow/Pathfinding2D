@@ -4,7 +4,6 @@ using Pathfinding2D;
 using Utility;
 using System;
 using System.Collections.Generic;
-using Utility.Polygon2D;
 using NavData2d;
 
 public class NavDebugger : MonoBehaviour

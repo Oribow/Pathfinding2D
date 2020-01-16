@@ -11,12 +11,12 @@ namespace NavGraph.Build
     public class NavigationData2DBuilder
     {
         const float fudgeFactor = 0.00001f;
-        NavAgentGroundWalkerSettings agentSettings;
+        //NavAgentGroundWalkerSettings agentSettings;
         float minNodeLength;
 
-        public NavigationData2DBuilder(NavAgentGroundWalkerSettings agentSettings, float minNodeLength)
+        public NavigationData2DBuilder(/*NavAgentGroundWalkerSettings agentSettings,*/ float minNodeLength)
         {
-            this.agentSettings = agentSettings;
+            //this.agentSettings = agentSettings;
             this.minNodeLength = minNodeLength;
         }
 
@@ -156,14 +156,14 @@ namespace NavGraph.Build
                     angle = 360 - angle;
                 if (angle > 90)
                     angle = 180 - angle;*/
-                if (angle > agentSettings.slopeLimit)
+                /*if (angle > agentSettings.slopeLimit)
                 {
                     return false;
                 }
                 else
                 {
                     return true;
-                }
+                }*/
             }
             else
             {
@@ -187,6 +187,7 @@ namespace NavGraph.Build
                     current = current.Next;
                 }*/
             }
+            return false;
         }
     }
 }

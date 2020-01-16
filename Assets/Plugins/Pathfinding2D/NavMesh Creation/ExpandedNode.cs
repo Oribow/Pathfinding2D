@@ -17,7 +17,7 @@ namespace NavGraph.Build
         [SerializeField]
         SerializableMarkableContour serializableMarkableContour;
        
-
+        /*
         public ExpandedNode(ContourNode contourNode)
         {
             contour = new MarkableContour(contourNode.contour, contourNode.IsSolid);
@@ -25,7 +25,7 @@ namespace NavGraph.Build
             children = new List<ExpandedNode>(contourNode.children.Count);
             foreach (ContourNode cNode in contourNode.children)
                 children.Add(new ExpandedNode(cNode));
-        }
+        }*/
 
         public ExpandedNode()
         {

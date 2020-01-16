@@ -3,14 +3,14 @@ using Utility;
 
 namespace NavGraph
 {
-    [CustomEditor(typeof(NavAgentGroundWalkerSettings))]
+    [CustomEditor(typeof(NavAgentType))]
     public class NavAgentGroundWalkerSettingAsset : Editor
     {
 
         [MenuItem("Pathfinding/NavAgentSettings/GroundWalker")]
         public static void CreateAsset()
         {
-            ScriptableObjectUtility.CreateAsset<NavAgentGroundWalkerSettings>("GroundWalkerSetting");
+            ScriptableObjectUtility.CreateAsset<NavAgentType>("GroundWalkerSetting");
         }
 
         public override void OnInspectorGUI()

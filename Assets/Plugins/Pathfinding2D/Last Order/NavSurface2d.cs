@@ -13,6 +13,8 @@ public class NavSurface2d : MonoBehaviour
         Volume,
         Children
     }
+    [Header("Agents")]
+    NavAgentType[] navAgentTypes;
 
     [Header("Filter")]
     [SerializeField]
@@ -24,10 +26,15 @@ public class NavSurface2d : MonoBehaviour
     [SerializeField, Range(4, 100)]
     int circleVertCount = 20;
 
+    [Header("DEBUG/TMP")]
+    [SerializeField]
+    int floatToIntMult = 1000;
+
+    private PolygonSet polygonSet;
+
     public void Bake()
     {
-        PolygonSet polygonSet = CollectNavigationPolygons();
-
+        polygonSet = CollectNavigationPolygons();
     }
 
     public PolygonSet CollectNavigationPolygons()
@@ -41,7 +48,7 @@ public class NavSurface2d : MonoBehaviour
                 navObjects = (from item in allCollider
                               where
                               GameObjectUtility.AreStaticEditorFlagsSet(item.gameObject, StaticEditorFlags.NavigationStatic) &&
-                              (item.gameObject.layer & includeLayers) > 0
+                              ((1 << item.gameObject.layer) & includeLayers) != 0
                               select item
                  );
 
@@ -69,11 +76,44 @@ public class NavSurface2d : MonoBehaviour
         }
 
         // 2. convert collider to geometry
-        PolygonSet polygonSet = new PolygonSet(circleVertCount);
+        PolygonSet polygonSet = new PolygonSet(circleVertCount, floatToIntMult);
+        int count = 0;
         foreach (var col in navObjects)
         {
             polygonSet.AddCollider(col);
+            count++;
         }
+        Debug.Log("Processed "+ count + " collider, resulting in "+polygonSet.Polygons.Count + " polygons.");
         return polygonSet;
+    }
+
+    public void OnDrawGizmosSelected()
+    {
+        if (polygonSet == null)
+            return;
+
+        foreach (var poly in polygonSet.Polygons)
+        {
+            Gizmos.color = Color.red;
+            DrawContour(poly.hull);
+
+            Gizmos.color = Color.blue;
+            foreach (var hole in poly.holes)
+            {
+                DrawContour(hole);
+            }
+        }
+    }
+
+    private void DrawContour(Contour contour)
+    {
+        Vector2 prevPoint = polygonSet.IntPointToVector2(contour.Verts[contour.VertexCount - 1]);
+        foreach (var point in contour.Verts)
+        {
+            var v = polygonSet.IntPointToVector2(point);
+            Gizmos.DrawLine(prevPoint, v);
+
+            prevPoint = v;
+        }
     }
 }
