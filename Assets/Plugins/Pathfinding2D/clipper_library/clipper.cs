@@ -391,16 +391,6 @@ namespace ClipperLib
         {
             this.x = pt.x; this.y = pt.y;
         }
-#endif
-        public static bool operator ==(IntPoint a, IntPoint b)
-        {
-            return a.x == b.x && a.y == b.y;
-        }
-
-        public static bool operator !=(IntPoint a, IntPoint b)
-        {
-            return a.x != b.x || a.y != b.y;
-        }
 
         public override bool Equals(object obj)
         {
@@ -413,6 +403,22 @@ namespace ClipperLib
             else return false;
         }
 
+        public override int GetHashCode()
+        {
+            //simply prevents a compiler warning
+            return base.GetHashCode();
+        }
+#endif
+        public static bool operator ==(IntPoint a, IntPoint b)
+        {
+            return a.x == b.x && a.y == b.y;
+        }
+
+        public static bool operator !=(IntPoint a, IntPoint b)
+        {
+            return a.x != b.x || a.y != b.y;
+        }
+
         public static IntPoint operator -(IntPoint a, IntPoint b)
         {
             return new IntPoint(a.x - b.x, a.y - b.y);
@@ -421,12 +427,6 @@ namespace ClipperLib
         public static IntPoint operator +(IntPoint a, IntPoint b)
         {
             return new IntPoint(a.x + b.x, a.y + b.y);
-        }
-
-        public override int GetHashCode()
-        {
-            //simply prevents a compiler warning
-            return base.GetHashCode();
         }
 
     }// end struct IntPoint
