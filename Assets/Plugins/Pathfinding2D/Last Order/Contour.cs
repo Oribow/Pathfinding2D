@@ -29,6 +29,7 @@ public class Contour : IEnumerable<IntPoint>
         this.Verts = verticies;
     }
 
+
     public IntPoint this[int key]
     {
         get { return Verts[key]; }

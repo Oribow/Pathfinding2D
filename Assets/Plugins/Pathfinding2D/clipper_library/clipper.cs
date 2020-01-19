@@ -429,6 +429,11 @@ namespace ClipperLib
             return new IntPoint(a.x + b.x, a.y + b.y);
         }
 
+        public override string ToString()
+        {
+            return "("+x +"| "+y+")";
+        }
+
     }// end struct IntPoint
 
     public struct IntRect

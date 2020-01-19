@@ -18,15 +18,20 @@ public class ObstructableSegment
 
     public void AddObstruction(float start, float end)
     {
+        start = Mathf.Clamp01(start);
+        end = Mathf.Clamp01(end);
+
         if (start == end)
             return;
 
         var currentNode = freeSegments.First;
-        do
+        while (currentNode != null)
         {
             if (currentNode.Value.start >= start && currentNode.Value.end <= end)
             {
+                var next = currentNode.Next;
                 freeSegments.Remove(currentNode);
+                currentNode = next;
                 continue;
             }
             else if (currentNode.Value.start < start && currentNode.Value.end > end)
@@ -36,15 +41,21 @@ public class ObstructableSegment
                 currentNode.Value = new FreeSegment(currentNode.Value.start, start);
                 return;
             }
-            else if (currentNode.Value.start <= start && currentNode.Value.end > start)
+            else if (currentNode.Value.start <= start && currentNode.Value.end > start && currentNode.Value.end <= end )
             {
                 currentNode.Value = new FreeSegment(currentNode.Value.start, start);
             }
-            else if (currentNode.Value.start > end && currentNode.Value.end <= end)
+            else if (currentNode.Value.start < end && currentNode.Value.end >= end && currentNode.Value.start >= start )
             {
                 currentNode.Value = new FreeSegment(end, currentNode.Value.end);
             }
-        } while ((currentNode = currentNode.Next) != null);
+            currentNode = currentNode.Next;
+        }
+    }
+
+    public Vector2 GetPointAlongSegment(float t)
+    {
+        return startPoint + dir * t;
     }
 }
 

@@ -21,7 +21,7 @@ namespace NavGraph.Build
 
         float anglePerCircleVert;
         int circleVertCount;
-        int floatToIntMult;
+        public int floatToIntMult;
 
         Clipper clipper;
 
@@ -37,6 +37,7 @@ namespace NavGraph.Build
             Edges = new List<Vector2[]>(10);
 
             clipper = new Clipper();
+            clipper.ReverseSolution = true;
         }
 
         public void AddCollider(Collider2D col)

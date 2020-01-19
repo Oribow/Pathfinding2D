@@ -17,7 +17,7 @@ public class JumpSegment : IPathSegment
     float duration;
     Vector2 goal;
     Vector2 start; //only for debug
-
+    /*
     public JumpSegment(JumpLink link)
     {
         goal = link.targetPos.navPoint;
@@ -40,7 +40,7 @@ public class JumpSegment : IPathSegment
         }
         duration = Mathf.Abs((link.xMax - link.xMin) / xVel);
         timeOut = duration + TimeOutFudgeSeconds;
-    }
+    }*/
 
     public override float TimeOut
     {

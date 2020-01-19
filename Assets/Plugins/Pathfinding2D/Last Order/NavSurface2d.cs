@@ -14,7 +14,8 @@ public class NavSurface2d : MonoBehaviour
         Children
     }
     [Header("Agents")]
-    NavAgentType[] navAgentTypes;
+    [SerializeField]
+    private NavAgentType[] navAgentTypes;
 
     [Header("Filter")]
     [SerializeField]
@@ -29,12 +30,26 @@ public class NavSurface2d : MonoBehaviour
     [Header("DEBUG/TMP")]
     [SerializeField]
     int floatToIntMult = 1000;
+    [SerializeField]
+    bool drawUnionPolygons;
 
     private PolygonSet polygonSet;
+    [SerializeField, ReadOnly]
+    private List<NavLine> navLines;
 
     public void Bake()
     {
         polygonSet = CollectNavigationPolygons();
+        var it = new IntersectionTester();
+        if (navAgentTypes == null || navAgentTypes.Length > 0)
+        {
+            navLines = it.Mark(polygonSet, navAgentTypes[0]);
+            Debug.Log("Created "+navLines.Count+" navlines");
+        }
+        else
+        {
+            Debug.LogError("No agent type specified");
+        }
     }
 
     public PolygonSet CollectNavigationPolygons()
@@ -83,24 +98,61 @@ public class NavSurface2d : MonoBehaviour
             polygonSet.AddCollider(col);
             count++;
         }
-        Debug.Log("Processed "+ count + " collider, resulting in "+polygonSet.Polygons.Count + " polygons.");
+        Debug.Log("Processed " + count + " collider, resulting in " + polygonSet.Polygons.Count + " polygons.");
         return polygonSet;
     }
 
-    public void OnDrawGizmosSelected()
+    public void OnDrawGizmos()
     {
-        if (polygonSet == null)
-            return;
-
-        foreach (var poly in polygonSet.Polygons)
+        if (navLines != null)
         {
-            Gizmos.color = Color.red;
-            DrawContour(poly.hull);
-
-            Gizmos.color = Color.blue;
-            foreach (var hole in poly.holes)
+            Gizmos.color = Color.green;
+            foreach (var line in navLines)
             {
-                DrawContour(hole);
+                for(int iSeg = 0; iSeg < line.segments.Length - 1; iSeg++)
+                {
+                    Gizmos.DrawLine(line.segments[iSeg].start / floatToIntMult, line.segments[iSeg + 1].start / floatToIntMult);
+                }
+
+                // draw special beginning and end marker
+                if (line.segments.Length >= 2)
+                {
+                    var start = line.segments[0].start / floatToIntMult;
+                    var start2 = line.segments[1].start / floatToIntMult;
+                    var normal = (start2 - start);
+                    normal = new Vector2(-normal.y, normal.x).normalized;
+
+                    Gizmos.DrawLine(start + (normal * -0.2f), start + (normal * 0.2f));
+
+                    var end = line.segments[line.segments.Length - 1].start / floatToIntMult;
+                    var end2 = line.segments[line.segments.Length - 2].start / floatToIntMult;
+
+                    normal = (end2 - end);
+                    normal = new Vector2(-normal.y, normal.x).normalized;
+
+                    Gizmos.DrawLine(end + (normal * -0.2f), end + (normal * 0.2f));
+                }
+
+                for (int iSeg = 0; iSeg < line.segments.Length - 1; iSeg++)
+                {
+                    
+                }
+            }
+        }
+
+
+        if (polygonSet != null && drawUnionPolygons)
+        {
+            foreach (var poly in polygonSet.Polygons)
+            {
+                Gizmos.color = Color.red;
+                DrawContour(poly.hull);
+
+                Gizmos.color = Color.blue;
+                foreach (var hole in poly.holes)
+                {
+                    DrawContour(hole);
+                }
             }
         }
     }
@@ -111,7 +163,7 @@ public class NavSurface2d : MonoBehaviour
         foreach (var point in contour.Verts)
         {
             var v = polygonSet.IntPointToVector2(point);
-            Gizmos.DrawLine(prevPoint, v);
+            DebugExtension.DrawArrow(prevPoint, v - prevPoint);
 
             prevPoint = v;
         }
