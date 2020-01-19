@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-[CustomEditor(typeof(JumpLink))]
+[CustomEditor(typeof(OffNavLineLink))]
 public class JumpLinkInspector : Editor
 {
     public override void OnInspectorGUI()
@@ -12,7 +12,7 @@ public class JumpLinkInspector : Editor
 
         if (GUILayout.Button("Update"))
         {
-            var navSurface = (JumpLink)target;
+            var navSurface = (OffNavLineLink)target;
             navSurface.UpdateLink();
         }
     }

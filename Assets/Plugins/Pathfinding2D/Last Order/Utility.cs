@@ -26,5 +26,18 @@ namespace ABC
             }
             return new IntRect(min.x, max.y, max.x, min.y);
         }
+
+        public static Vector2 QuadraticBezierCurve(float t, Vector2 a, Vector2 b, Vector2 c)
+        {
+            return (1 - t) * (1 - t) * a + 2 * (1 - t) * t * b + t * t * c;
+        }
+
+        public static void DrawArrow(Vector2 pos, Vector2 dir)
+        {
+            Vector2 normal = new Vector2(-dir.y, dir.x).normalized * 0.1f;
+            Gizmos.DrawLine(pos - normal, pos + normal);
+            Gizmos.DrawLine(pos - normal, pos + dir);
+            Gizmos.DrawLine(pos + normal, pos + dir);
+        }
     }
 }

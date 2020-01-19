@@ -7,6 +7,8 @@ using NavGraph.Build;
 [RequireComponent(typeof(RectTransform))]
 public class NavSurface2d : MonoBehaviour
 {
+    const float pointNavLineMaxDistance = 3;
+
     private enum CollectObjectsMethod
     {
         All,
@@ -44,7 +46,17 @@ public class NavSurface2d : MonoBehaviour
         if (navAgentTypes == null || navAgentTypes.Length > 0)
         {
             navLines = it.Mark(polygonSet, navAgentTypes[0]);
-            Debug.Log("Created "+navLines.Count+" navlines");
+
+            // convert coordinates back
+            foreach (var line in navLines)
+            {
+                foreach (var segment in line.segments)
+                {
+                    segment.start /= floatToIntMult;
+                }
+            }
+
+            Debug.Log("Created " + navLines.Count + " navlines");
         }
         else
         {
@@ -109,33 +121,35 @@ public class NavSurface2d : MonoBehaviour
             Gizmos.color = Color.green;
             foreach (var line in navLines)
             {
-                for(int iSeg = 0; iSeg < line.segments.Length - 1; iSeg++)
+                for (int iSeg = 0; iSeg < line.segments.Length - 1; iSeg++)
                 {
-                    Gizmos.DrawLine(line.segments[iSeg].start / floatToIntMult, line.segments[iSeg + 1].start / floatToIntMult);
+                    Gizmos.DrawLine(line.segments[iSeg].start, line.segments[iSeg + 1].start);
                 }
 
                 // draw special beginning and end marker
-                if (line.segments.Length >= 2)
+                if (line.isClosed)
                 {
-                    var start = line.segments[0].start / floatToIntMult;
-                    var start2 = line.segments[1].start / floatToIntMult;
-                    var normal = (start2 - start);
-                    normal = new Vector2(-normal.y, normal.x).normalized;
-
-                    Gizmos.DrawLine(start + (normal * -0.2f), start + (normal * 0.2f));
-
-                    var end = line.segments[line.segments.Length - 1].start / floatToIntMult;
-                    var end2 = line.segments[line.segments.Length - 2].start / floatToIntMult;
-
-                    normal = (end2 - end);
-                    normal = new Vector2(-normal.y, normal.x).normalized;
-
-                    Gizmos.DrawLine(end + (normal * -0.2f), end + (normal * 0.2f));
+                    Gizmos.DrawLine(line.segments[0].start, line.segments[line.segments.Length - 1].start);
                 }
-
-                for (int iSeg = 0; iSeg < line.segments.Length - 1; iSeg++)
+                else
                 {
-                    
+                    if (line.segments.Length >= 2)
+                    {
+                        var start = line.segments[0].start;
+                        var start2 = line.segments[1].start;
+                        var normal = (start2 - start);
+                        normal = new Vector2(-normal.y, normal.x).normalized;
+
+                        Gizmos.DrawLine(start + (normal * -0.2f), start + (normal * 0.2f));
+
+                        var end = line.segments[line.segments.Length - 1].start;
+                        var end2 = line.segments[line.segments.Length - 2].start;
+
+                        normal = (end2 - end);
+                        normal = new Vector2(-normal.y, normal.x).normalized;
+
+                        Gizmos.DrawLine(end + (normal * -0.2f), end + (normal * 0.2f));
+                    }
                 }
             }
         }
@@ -154,6 +168,41 @@ public class NavSurface2d : MonoBehaviour
                     DrawContour(hole);
                 }
             }
+        }
+    }
+
+    public bool NearestNavPosition2d(Vector2 point, out NavPosition2d navPosition)
+    {
+        float minDistance = float.MaxValue;
+        NavLine closestNavLine = null;
+        int closestNavLineSegmentIndex = -1;
+        Vector2 closestPoint = Vector2.zero;
+
+        foreach (var line in navLines)
+        {
+            int segIndex;
+            Vector2 p;
+            float dist = line.DistanceToPoint(point, out segIndex, out p);
+
+            if (dist < minDistance)
+            {
+                minDistance = dist;
+                closestNavLine = line;
+                closestNavLineSegmentIndex = segIndex;
+                closestPoint = p;
+            }
+        }
+
+        if (minDistance == float.MaxValue)
+        {
+            navPosition = null;
+            return false;
+        }
+        else
+        {
+
+            navPosition = new NavPosition2d(closestNavLine, closestNavLineSegmentIndex, closestPoint);
+            return true;
         }
     }
 

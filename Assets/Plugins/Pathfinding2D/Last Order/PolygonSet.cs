@@ -159,6 +159,19 @@ namespace NavGraph.Build
             return Mathf.RoundToInt(f * floatToIntMult);
         }
 
+        public IEnumerable<Contour> EnumerateContours()
+        {
+            for (int iPoly = 0; iPoly < Polygons.Count; iPoly++)
+            {
+                var poly = Polygons[iPoly];
+                yield return poly.hull;
+                for (int iHole = 0; iHole < poly.holes.Count; iHole++)
+                {
+                    yield return poly.holes[iHole];
+                }
+            }
+        }
+
         private Polygon PolygonFromBoxCollider2D(BoxCollider2D collider)
         {
             Vector2 halfSize = collider.size / 2;

@@ -28,19 +28,25 @@ public class IntersectionTester
         this.polygonSet = polySet;
 
         List<NavLine> inOutNavLines = new List<NavLine>(50);
-        for (int iPoly = 0; iPoly < polySet.Polygons.Count; iPoly++)
+
+        if (navAgentType.isGravityBound)
         {
-            var poly = polySet.Polygons[iPoly];
-            MarkContour(inOutNavLines, poly.hull);
-            for (int iHole = 0; iHole < poly.holes.Count; iHole++)
+            foreach (var contour in polygonSet.EnumerateContours())
             {
-                MarkContour(inOutNavLines, poly.holes[iHole]);
+                MarkContourGravityBound(inOutNavLines, contour);
+            }
+        }
+        else
+        {
+            foreach (var contour in polygonSet.EnumerateContours())
+            {
+                MarkContourFreely(inOutNavLines, contour);
             }
         }
         return inOutNavLines;
     }
 
-    private void MarkContour(List<NavLine> inOutNavLines, Contour contour)
+    private void MarkContourFreely(List<NavLine> inOutNavLines, Contour contour)
     {
 
         //1. go through every segement
@@ -59,6 +65,68 @@ public class IntersectionTester
             float segmentLength = fDir.magnitude;
             float dirM = fDir.y / fDir.x;
             fDir /= segmentLength;
+            var normal = new Vector2(-fDir.y, fDir.x);
+
+            /*GizmosQueue.Instance.Enqueue(5, () =>
+            {
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawLine((fPrevPoint + fDir * 0.5f * segmentLength) / polygonSet.floatToIntMult,
+                    (fPrevPoint + fDir * 0.5f * segmentLength) / polygonSet.floatToIntMult +
+                    polygonSet.IntPointToVector2(normal).normalized
+                    );
+            });*/
+            // 2. construct parallelogram
+            var walkSpace = ConstructWalkSpaceBox(prevPoint, point, normal);
+            var walkSpaceBounds = ABC.Utility.CalculateBoundingRect(walkSpace);
+
+            foreach (var solution in ClipAgainstAll(walkSpace, walkSpaceBounds))
+            {
+                for (int iSolutionPoly = 0; iSolutionPoly < solution.Count; iSolutionPoly++)
+                {
+                    var bound = ProjectPolygonOnSegment(solution[iSolutionPoly], prevPoint, fDir);
+
+                    float start = bound.x / segmentLength;
+                    float end = bound.y / segmentLength;
+                    seg.AddObstruction(start, end);
+
+                    int copy = iSolutionPoly;
+                    GizmosQueue.Instance.Enqueue(5, () =>
+                    {
+                        Gizmos.color = Color.red;
+                        var sol = solution[copy];
+                        var prevP = sol[sol.Count - 1];
+                        foreach (var p in sol)
+                        {
+                            Gizmos.DrawLine(polygonSet.IntPointToVector2(prevP), polygonSet.IntPointToVector2(p));
+                            prevP = p;
+                        }
+
+                    });
+                }
+            }
+            prevPoint = point;
+        }
+        ConvertObstructableSegmentsIntoNavLines(inOutNavLines, obstructableContour);
+    }
+
+    private void MarkContourGravityBound(List<NavLine> inOutNavLines, Contour contour)
+    {
+
+        //1. go through every segement
+        var verts = contour.Verts;
+        var prevPoint = verts[verts.Count - 1];
+        ObstructableSegment[] obstructableContour = new ObstructableSegment[verts.Count];
+
+        for (int iPoint = 0; iPoint < verts.Count; iPoint++)
+        {
+            var point = verts[iPoint];
+            Vector2 fPrevPoint = new Vector2(prevPoint.x, prevPoint.y);
+            IntPoint dir = point - prevPoint;
+            Vector2 fDir = new Vector2(dir.x, dir.y);
+            var seg = new ObstructableSegment(fPrevPoint, fDir);
+            obstructableContour[iPoint] = seg;
+            float segmentLength = fDir.magnitude;
+            float dirM = fDir.y / fDir.x;
 
             // 1. filter based on slope angle, everything above --o-- will be discarded
             Vector2 normal = new Vector2(-dir.y, dir.x);
@@ -79,10 +147,11 @@ public class IntersectionTester
             else
             {
                 // 2. construct parallelogram
-                var walkSpace = ConstructWalkSpaceParallelogram(prevPoint, point, fDir);
+                var walkSpace = ConstructWalkSpaceParallelogram(prevPoint, point);
                 var walkSpaceBounds = ABC.Utility.CalculateBoundingRect(walkSpace);
 
-                foreach (var solution in ClipAgainstAll(walkSpace, walkSpaceBounds)) {
+                foreach (var solution in ClipAgainstAll(walkSpace, walkSpaceBounds))
+                {
                     for (int iSolutionPoly = 0; iSolutionPoly < solution.Count; iSolutionPoly++)
                     {
                         var bound = GravityBoundProjectPolygonOnSegment(solution[iSolutionPoly], prevPoint, dirM);
@@ -155,7 +224,13 @@ public class IntersectionTester
         } while (nextSeg != -1 && nextSegNode != startSegNode);
 
         // check if last segment is connected to first segment
-        if (nextSeg != -1 && (lastSeg + 1 == nextSeg || nextSeg + obstructableContour.Length - 1 == lastSeg) && nextSegNode.Value.start == 0 && lastSegNode.Value.end == 1)
+        if (firstLineIndex == inOutNavLines.Count && navLineSegments.Count > 0)
+        {
+            //whole contour is walkable
+            navLineSegments.RemoveAt(navLineSegments.Count - 1);
+            inOutNavLines.Add(new NavLine(navLineSegments, true));
+        }
+        else if (firstLineIndex < inOutNavLines.Count && nextSeg != -1 && (lastSeg + 1 == nextSeg || nextSeg + obstructableContour.Length - 1 == lastSeg) && nextSegNode.Value.start == 0 && lastSegNode.Value.end == 1)
         {
             // merge first and last nav line
             var firstLine = inOutNavLines[firstLineIndex];
@@ -191,14 +266,9 @@ public class IntersectionTester
         }
     }
 
-    private List<IntPoint> ConstructWalkSpaceParallelogram(IntPoint a, IntPoint b, Vector2 dir)
+    private List<IntPoint> ConstructWalkSpaceParallelogram(IntPoint a, IntPoint b)
     {
         List<IntPoint> result = new List<IntPoint>(4);
-        //var fBias = dir * halfAgentWidth;
-        //var bias = new IntPoint(Mathf.RoundToInt(fBias.x), Mathf.RoundToInt(fBias.y));
-
-        //a -= bias;
-        //b += bias;
 
         result.Add(b);
         result.Add(a);
@@ -217,7 +287,30 @@ public class IntersectionTester
         });
 
         return result;
-        //MAYBE: need to ensure that the result is ccw
+    }
+
+    private List<IntPoint> ConstructWalkSpaceBox(IntPoint a, IntPoint b, Vector2 normal)
+    {
+        List<IntPoint> result = new List<IntPoint>(4);
+        var fBias = normal * agentHeight;
+        var bias = new IntPoint(Mathf.RoundToInt(fBias.x), Mathf.RoundToInt(fBias.y));
+
+        result.Add(b);
+        result.Add(a);
+        a += bias;
+        b += bias;
+        result.Add(a);
+        result.Add(b);
+
+
+        GizmosQueue.Instance.Enqueue(5, () =>
+        {
+            DebugExtension.DrawArrow(polygonSet.IntPointToVector2(result[0]), polygonSet.IntPointToVector2(result[1]) - polygonSet.IntPointToVector2(result[0]), Color.blue);
+            DebugExtension.DrawArrow(polygonSet.IntPointToVector2(result[1]), polygonSet.IntPointToVector2(result[2]) - polygonSet.IntPointToVector2(result[1]), Color.blue);
+            DebugExtension.DrawArrow(polygonSet.IntPointToVector2(result[2]), polygonSet.IntPointToVector2(result[3]) - polygonSet.IntPointToVector2(result[2]), Color.blue);
+            DebugExtension.DrawArrow(polygonSet.IntPointToVector2(result[3]), polygonSet.IntPointToVector2(result[0]) - polygonSet.IntPointToVector2(result[3]), Color.blue);
+        });
+        return result;
     }
 
     private Vector2 GravityBoundProjectPolygonOnSegment(List<IntPoint> polygon, IntPoint segmentStart, float segmentDirM)
@@ -239,6 +332,27 @@ public class IntersectionTester
         var v = new Vector2(point.x - segmentStart.x, 0);
         v.y = segmentDirM * v.x;
         return v.magnitude;
+    }
+
+    private Vector2 ProjectPolygonOnSegment(List<IntPoint> polygon, IntPoint segmentStart, Vector2 segmentDir)
+    {
+        float start, end;
+        start = end = DistanceAlongSegment(segmentStart, segmentDir, polygon[0]);
+
+        for (int iVert = 1; iVert < polygon.Count; iVert++)
+        {
+            float dist = DistanceAlongSegment(segmentStart, segmentDir, polygon[iVert]);
+            start = Mathf.Min(start, dist);
+            end = Mathf.Max(end, dist);
+        }
+        return new Vector2(start, end);
+    }
+
+    private float DistanceAlongSegment(IntPoint segmentStart, Vector2 segmentDir, IntPoint point)
+    {
+        var v = point - segmentStart;
+        var fv = new Vector2(v.x, v.y);
+        return Vector2.Dot(segmentDir, fv);
     }
 
     private void GetNextSegment(ObstructableSegment[] obstructableContour, ref int segIndex, ref LinkedListNode<FreeSegment> currentFreeSegment)
