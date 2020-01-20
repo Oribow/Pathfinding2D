@@ -199,13 +199,13 @@ public class IntersectionTester
 
         LinkedListNode<FreeSegment> startSegNode = nextSegNode;
 
-        List<NavLineSegment> navLineSegments = new List<NavLineSegment>(10);
-        navLineSegments.Add(new NavLineSegment(obstructableContour[nextSeg].GetPointAlongSegment(nextSegNode.Value.start)));
+        List<NavSegment> navLineSegments = new List<NavSegment>(10);
+        navLineSegments.Add(new NavSegment(obstructableContour[nextSeg].GetPointAlongSegment(nextSegNode.Value.start)));
 
         int firstLineIndex = inOutNavLines.Count;
         do
         {
-            navLineSegments.Add(new NavLineSegment(obstructableContour[nextSeg].GetPointAlongSegment(nextSegNode.Value.end)));
+            navLineSegments.Add(new NavSegment(obstructableContour[nextSeg].GetPointAlongSegment(nextSegNode.Value.end)));
             lastSeg = nextSeg;
             lastSegNode = nextSegNode;
             GetNextSegment(obstructableContour, ref nextSeg, ref nextSegNode);
@@ -218,7 +218,7 @@ public class IntersectionTester
                 if (nextSeg != -1 && nextSegNode != startSegNode)
                 {
                     // prepare for new line
-                    navLineSegments.Add(new NavLineSegment(obstructableContour[nextSeg].GetPointAlongSegment(nextSegNode.Value.start)));
+                    navLineSegments.Add(new NavSegment(obstructableContour[nextSeg].GetPointAlongSegment(nextSegNode.Value.start)));
                 }
             }
         } while (nextSeg != -1 && nextSegNode != startSegNode);
@@ -235,7 +235,7 @@ public class IntersectionTester
             // merge first and last nav line
             var firstLine = inOutNavLines[firstLineIndex];
 
-            var combinedSegments = new List<NavLineSegment>(navLineSegments.Count + firstLine.segments.Length);
+            var combinedSegments = new List<NavSegment>(navLineSegments.Count + firstLine.segments.Length);
             combinedSegments.AddRange(navLineSegments);
             combinedSegments.AddRange(firstLine.segments);
 

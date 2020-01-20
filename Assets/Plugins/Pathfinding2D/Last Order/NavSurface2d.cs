@@ -64,7 +64,47 @@ public class NavSurface2d : MonoBehaviour
         }
     }
 
-    public PolygonSet CollectNavigationPolygons()
+    public bool NearestNavPosition2d(Vector2 point, out NavPosition2d navPosition)
+    {
+        float minDistance = float.MaxValue;
+        NavLine closestNavLine = null;
+        int closestNavLineSegmentIndex = -1;
+        Vector2 closestPoint = Vector2.zero;
+
+        foreach (var line in navLines)
+        {
+            int segIndex;
+            Vector2 p;
+            float dist = line.DistanceToPoint(point, out segIndex, out p);
+
+            if (dist < minDistance)
+            {
+                minDistance = dist;
+                closestNavLine = line;
+                closestNavLineSegmentIndex = segIndex;
+                closestPoint = p;
+            }
+        }
+
+        if (minDistance == float.MaxValue)
+        {
+            navPosition = null;
+            return false;
+        }
+        else
+        {
+
+            navPosition = new NavPosition2d(closestNavLine, closestNavLineSegmentIndex, closestPoint);
+            return true;
+        }
+    }
+
+    public void AddLink(OffNavLineLink link)
+    { 
+        
+    }
+
+    private PolygonSet CollectNavigationPolygons()
     {
         // 1. Collect collider
         IEnumerable<Collider2D> navObjects;
@@ -114,7 +154,7 @@ public class NavSurface2d : MonoBehaviour
         return polygonSet;
     }
 
-    public void OnDrawGizmos()
+    private void OnDrawGizmos()
     {
         if (navLines != null)
         {
@@ -168,41 +208,6 @@ public class NavSurface2d : MonoBehaviour
                     DrawContour(hole);
                 }
             }
-        }
-    }
-
-    public bool NearestNavPosition2d(Vector2 point, out NavPosition2d navPosition)
-    {
-        float minDistance = float.MaxValue;
-        NavLine closestNavLine = null;
-        int closestNavLineSegmentIndex = -1;
-        Vector2 closestPoint = Vector2.zero;
-
-        foreach (var line in navLines)
-        {
-            int segIndex;
-            Vector2 p;
-            float dist = line.DistanceToPoint(point, out segIndex, out p);
-
-            if (dist < minDistance)
-            {
-                minDistance = dist;
-                closestNavLine = line;
-                closestNavLineSegmentIndex = segIndex;
-                closestPoint = p;
-            }
-        }
-
-        if (minDistance == float.MaxValue)
-        {
-            navPosition = null;
-            return false;
-        }
-        else
-        {
-
-            navPosition = new NavPosition2d(closestNavLine, closestNavLineSegmentIndex, closestPoint);
-            return true;
         }
     }
 

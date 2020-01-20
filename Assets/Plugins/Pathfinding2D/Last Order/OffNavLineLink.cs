@@ -6,6 +6,9 @@ using NavData2d.Editor;
 
 public class OffNavLineLink : MonoBehaviour
 {
+    public NavPosition2d NavPosStart { get { return navPosStart; } }
+    public NavPosition2d NavPosEnd { get { return navPosEnd; } }
+
     [SerializeField]
     private Transform start;
     [SerializeField]
@@ -20,6 +23,14 @@ public class OffNavLineLink : MonoBehaviour
     [SerializeField, ReadOnly]
     private NavPosition2d navPosEnd;
 
+    private void Start()
+    {
+        var surface = GetComponentInParent<NavSurface2d>();
+        if (surface != null) { 
+            
+        }
+    }
+
     public void UpdateLink()
     {
         var surface = GetComponentInParent<NavSurface2d>();
@@ -32,20 +43,6 @@ public class OffNavLineLink : MonoBehaviour
         surface.NearestNavPosition2d(start.position, out navPosStart);
         surface.NearestNavPosition2d(end.position, out navPosEnd);
     }
-    /*
-    void WarpPointsToGround()
-    {
-        RaycastHit2D hit = Physics2D.Raycast(start, Vector2.down, 10, groundLayers);
-        if (hit.collider != null)
-        {
-            _start = hit.point;
-        }
-        hit = Physics2D.Raycast(end, Vector2.down, 10, groundLayers);
-        if (hit.collider != null)
-        {
-            _end = hit.point;
-        }
-    }*/
 
     void OnDrawGizmos()
     {
@@ -94,27 +91,5 @@ public class OffNavLineLink : MonoBehaviour
             Vector2 segmentNormal = navPos.SegmentNormal.normalized * 0.1f;
             Gizmos.DrawLine(navPos.Point - segmentTangent + segmentNormal, navPos.Point + segmentTangent + segmentNormal);
         }
-    }
-
-
-    void DrawJumpArc(Vector2 offset)
-    {
-        /*
-        Vector2 swapPos;
-        Vector2 prevPos = _start + offset;
-        float absStepWidth = (_end.x - _start.x) / 100f;
-        float stepWidth = absStepWidth * (_end.x < _start.x ? -1f : 1f);
-
-        for (int n = 0; n <= 100; n++)
-        {
-            float x = n * stepWidth;
-            float y = x / xVelocity;
-            y = (maxJumpForce - navAgentType.gravity / 2f * x) * x;
-
-            swapPos = new Vector2(_start.x + x, y) + offset;
-            Gizmos.DrawLine(prevPos, swapPos);
-            prevPos = swapPos;
-        }*/
-        //Handles.DrawLine(prevPos, new Vector2(link.jumpArc.endX, link.jumpArc.Calc(link.jumpArc.maxX - link.jumpArc.minX)) + origin);
     }
 }

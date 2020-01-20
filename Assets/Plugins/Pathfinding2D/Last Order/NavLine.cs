@@ -6,11 +6,11 @@ using UnityEngine;
 public class NavLine
 {
     [SerializeField]
-    public NavLineSegment[] segments;
+    public NavSegment[] segments;
 
     public bool isClosed;
 
-    public NavLine(List<NavLineSegment> segments, bool isClosed = false)
+    public NavLine(List<NavSegment> segments, bool isClosed = false)
     {
         this.segments = segments.ToArray();
         this.isClosed = isClosed;
@@ -62,13 +62,52 @@ public class NavLine
 }
 
 [System.Serializable]
-public class NavLineSegment
+public class NavSegment : INavNode
 {
-    [SerializeField]
     public Vector2 start;
+    public Vector2 dirNorm;
+    public float length;
 
-    public NavLineSegment(Vector2 start)
+    public NavSegment next;
+    public NavSegment prev;
+
+    List<NavNodeConnection> connections;
+
+    public NavSegment(Vector2 start, Vector2 dirNorm, float length)
     {
         this.start = start;
+        this.dirNorm = dirNorm;
+        this.length = length;
+        connections = new List<NavNodeConnection>();
+    }
+
+    public Vector2 GetPosition(float t)
+    {
+        return start + dirNorm * t;
+    }
+
+    public void AddConnection(NavNodeConnection connection)
+    {
+        this.connections.Add(connection);
+    }
+
+    public void RemoveConnection(NavNodeConnection connection)
+    {
+        this.connections.Remove(connection);
+    }
+
+    public void SetPrevSegment(NavSegment prevSegment)
+    {
+        connections.Add(new NavNodeConnection(prevSegment, prevSegment.length));
+    }
+
+    public void SetNextSegment(NavSegment nextSegment)
+    {
+        connections.Add(new NavNodeConnection(nextSegment, nextSegment.length));
+    }
+
+    public List<NavNodeConnection> Connections()
+    {
+        return connections;
     }
 }

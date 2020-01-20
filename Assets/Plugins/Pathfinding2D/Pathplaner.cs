@@ -11,7 +11,7 @@ public class PathPlaner : MonoBehaviour
 
     public static PathPlaner Instance { get { return instance; } }
     private static PathPlaner instance;
-#if false
+#if true
     [SerializeField]
     NavigationData2D navData;
 
