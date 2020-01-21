@@ -6,7 +6,7 @@ public class NavLinePostProcessor
 {
     void Process(List<NavLine> navLines, NavAgentType navAgentType, float floatToIntMult)
     {
-
+        /*
         //1. convert coordinates back
         ConvertCoordinates(navLines, floatToIntMult);
 
@@ -38,6 +38,6 @@ public class NavLinePostProcessor
             {
                 segment.start /= floatToIntMult;
             }
-        }
+        }*/
     }
 }

@@ -40,8 +40,8 @@ public class OffNavLineLink : MonoBehaviour
             return;
         }
 
-        surface.NearestNavPosition2d(start.position, out navPosStart);
-        surface.NearestNavPosition2d(end.position, out navPosEnd);
+        surface.FindNavPosition2d(start.position, out navPosStart);
+        surface.FindNavPosition2d(end.position, out navPosEnd);
     }
 
     void OnDrawGizmos()
@@ -53,30 +53,11 @@ public class OffNavLineLink : MonoBehaviour
 
         if (end != null && start != null)
         {
-            Vector2 start = navPosStart == null ? (Vector2)this.start.position : navPosStart.Point;
-            Vector2 end = navPosEnd == null ? (Vector2)this.end.position : navPosEnd.Point;
+            Vector2 start = navPosStart == null ? (Vector2)this.start.position : navPosStart.Position;
+            Vector2 end = navPosEnd == null ? (Vector2)this.end.position : navPosEnd.Position;
 
             // draw connection
-            float x = start.x + (end.x - start.x) * 0.5f;
-            float y = Mathf.Max(start.y, end.y) + 1;
-            Vector2 cp = new Vector2(x, y);
-
-            Vector2 prev = start;
-            for (int t = 1; t <= 10; t ++)
-            {
-                Vector2 v = ABC.Utility.QuadraticBezierCurve(t / 10f, start, cp, end);
-                Gizmos.DrawLine(prev, v);
-                prev = v;
-            }
-
-            //draw arrows
-            Vector2 p = ABC.Utility.QuadraticBezierCurve(0.9f, start, cp, end);
-            ABC.Utility.DrawArrow(p, end - p);
-            if (biDirectional)
-            {
-                p = ABC.Utility.QuadraticBezierCurve(0.1f, start, cp, end);
-                ABC.Utility.DrawArrow(p, start - p);
-            }
+            ABC.Utility.DrawBezierConnection(start, end, biDirectional);
         }
     }
 
@@ -85,11 +66,11 @@ public class OffNavLineLink : MonoBehaviour
         Gizmos.DrawCube(orgPos, Vector3.one * 0.1f);
         if (navPos != null)
         {
-            Vector2 segmentTangent = navPos.SegmentTangent.normalized * 0.2f;
-            Gizmos.DrawLine(navPos.Point - segmentTangent, navPos.Point + segmentTangent);
+            Vector2 segmentTangent = navPos.Tangent * 0.2f;
+            Gizmos.DrawLine(navPos.Position - segmentTangent, navPos.Position + segmentTangent);
 
-            Vector2 segmentNormal = navPos.SegmentNormal.normalized * 0.1f;
-            Gizmos.DrawLine(navPos.Point - segmentTangent + segmentNormal, navPos.Point + segmentTangent + segmentNormal);
+            Vector2 segmentNormal = navPos.Normal * 0.1f;
+            Gizmos.DrawLine(navPos.Position - segmentTangent + segmentNormal, navPos.Position + segmentTangent + segmentNormal);
         }
     }
 }

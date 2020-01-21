@@ -30,7 +30,7 @@ class AStar {
         closedNodes.Clear();
         openList.Clear();
 
-        PathNode startNode = new PathNode(segmentOfStart, 0);
+        PathNode startNode = new PathNode(start, 0);
         openList.Enqueue(startNode, 0);
 
         while (openList.Count > 0)
@@ -45,6 +45,7 @@ class AStar {
             closedNodes.Add(node);
 
         }
+        return null;
     }
 
     private float Costs(Vector2 pos, Vector2 goal)
@@ -57,9 +58,9 @@ class PathNode : FastPriorityQueueNode
 {
     public float costSoFar;
     public PathNode parent;
-    public NavSegment targetSegment;
+    public INavNode2d navNode;
 
-    public PathNode(INavNode navNode, float costSoFar) {
+    public PathNode(INavNode2d navNode, float costSoFar) {
         this.costSoFar = costSoFar;
         this.navNode = navNode;
     }

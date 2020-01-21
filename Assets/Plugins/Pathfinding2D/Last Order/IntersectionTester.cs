@@ -200,12 +200,12 @@ public class IntersectionTester
         LinkedListNode<FreeSegment> startSegNode = nextSegNode;
 
         List<NavSegment> navLineSegments = new List<NavSegment>(10);
-        navLineSegments.Add(new NavSegment(obstructableContour[nextSeg].GetPointAlongSegment(nextSegNode.Value.start)));
-
         int firstLineIndex = inOutNavLines.Count;
         do
         {
-            navLineSegments.Add(new NavSegment(obstructableContour[nextSeg].GetPointAlongSegment(nextSegNode.Value.end)));
+            navLineSegments.Add(new NavSegment(
+                obstructableContour[nextSeg].GetPointAlongSegment(nextSegNode.Value.start) / polygonSet.floatToIntMult,
+                obstructableContour[nextSeg].GetPointAlongSegment(nextSegNode.Value.end) / polygonSet.floatToIntMult));
             lastSeg = nextSeg;
             lastSegNode = nextSegNode;
             GetNextSegment(obstructableContour, ref nextSeg, ref nextSegNode);
@@ -215,11 +215,6 @@ public class IntersectionTester
                 // segments not connected, flush
                 inOutNavLines.Add(new NavLine(navLineSegments));
                 navLineSegments.Clear();
-                if (nextSeg != -1 && nextSegNode != startSegNode)
-                {
-                    // prepare for new line
-                    navLineSegments.Add(new NavSegment(obstructableContour[nextSeg].GetPointAlongSegment(nextSegNode.Value.start)));
-                }
             }
         } while (nextSeg != -1 && nextSegNode != startSegNode);
 
@@ -227,8 +222,7 @@ public class IntersectionTester
         if (firstLineIndex == inOutNavLines.Count && navLineSegments.Count > 0)
         {
             //whole contour is walkable
-            navLineSegments.RemoveAt(navLineSegments.Count - 1);
-            inOutNavLines.Add(new NavLine(navLineSegments, true));
+            inOutNavLines.Add(new NavLine(navLineSegments));
         }
         else if (firstLineIndex < inOutNavLines.Count && nextSeg != -1 && (lastSeg + 1 == nextSeg || nextSeg + obstructableContour.Length - 1 == lastSeg) && nextSegNode.Value.start == 0 && lastSegNode.Value.end == 1)
         {

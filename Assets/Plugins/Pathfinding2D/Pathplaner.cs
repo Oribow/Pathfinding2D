@@ -11,7 +11,7 @@ public class PathPlaner : MonoBehaviour
 
     public static PathPlaner Instance { get { return instance; } }
     private static PathPlaner instance;
-#if true
+#if false
     [SerializeField]
     NavigationData2D navData;
 
@@ -308,7 +308,7 @@ public class PathPlaner : MonoBehaviour
         return true;
     }
 
-    bool IsNodeClosed(NavNode nn, int vertIndex)
+    bool IsNodeClosed(NavNodeSegmentMiddle nn, int vertIndex)
     {
         for (int i = 0; i < closedNodes.Count; i++)
         {
@@ -327,7 +327,7 @@ public class PathPlaner : MonoBehaviour
     {
         public IPathNode parent;
 
-        public NavNode navNode;
+        public NavNodeSegmentMiddle navNode;
         public int navVertIndex;
 
         public float costSoFar;
@@ -336,10 +336,10 @@ public class PathPlaner : MonoBehaviour
         public abstract void GetNeighbours(out int neighbourLeft, out int neighbourRight);
         public abstract Vector2 StartPoint { get; }
         public abstract Vector2 EndPoint { get; }
-        public NavNode NavNode { get { return navNode; } }
+        public NavNodeSegmentMiddle NavNode { get { return navNode; } }
         public NavVert NavVert { get { return navNode.verts[navVertIndex]; } }
 
-        public IPathNode(IPathNode parent, NavNode navNode, int navVertIndex, float costSoFar, float estimatedCost)
+        public IPathNode(IPathNode parent, NavNodeSegmentMiddle navNode, int navVertIndex, float costSoFar, float estimatedCost)
         {
             this.navNode = navNode;
             this.navVertIndex = navVertIndex;
@@ -353,7 +353,7 @@ public class PathPlaner : MonoBehaviour
     {
         public bool vertIndexIsIncrementing;
 
-        public PathNode_Edge(IPathNode parent, NavNode navNode, int navVertIndex, bool vertIndexIsIncrementing, float costSoFar, float estimatedCost) : base(parent, navNode, navVertIndex, costSoFar, estimatedCost)
+        public PathNode_Edge(IPathNode parent, NavNodeSegmentMiddle navNode, int navVertIndex, bool vertIndexIsIncrementing, float costSoFar, float estimatedCost) : base(parent, navNode, navVertIndex, costSoFar, estimatedCost)
         {
             this.vertIndexIsIncrementing = vertIndexIsIncrementing;
         }
@@ -442,7 +442,7 @@ public class PathPlaner : MonoBehaviour
     {
         Vector2 start_point;
 
-        public PathNode_Start(NavNode navNode, int navVertIndex, float estimatedCost, Vector2 startPoint) : base(null, navNode, navVertIndex, 0, estimatedCost)
+        public PathNode_Start(NavNodeSegmentMiddle navNode, int navVertIndex, float estimatedCost, Vector2 startPoint) : base(null, navNode, navVertIndex, 0, estimatedCost)
         {
             this.start_point = startPoint;
         }
@@ -498,7 +498,7 @@ public class PathPlaner : MonoBehaviour
     {
         int linkIndex;
 
-        public PathNode_Link(IPathNode parent, NavNode navNode, int navVertIndex, float costSoFar, float estimatedCost, int linkIndex) : base(parent, navNode, navVertIndex, costSoFar, estimatedCost)
+        public PathNode_Link(IPathNode parent, NavNodeSegmentMiddle navNode, int navVertIndex, float costSoFar, float estimatedCost, int linkIndex) : base(parent, navNode, navVertIndex, costSoFar, estimatedCost)
         {
             this.linkIndex = linkIndex;
         }
@@ -683,4 +683,3 @@ interface ILightRequest
             }
         }
     }
-

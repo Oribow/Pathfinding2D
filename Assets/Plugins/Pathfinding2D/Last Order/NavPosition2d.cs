@@ -3,21 +3,28 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
-public class NavPosition2d
+public class NavPosition2d : INavNode2d
 {
-    public INavNode NavNode { get { return navNode; } }
-    public Vector2 Point { get { return navNode.GetPosition(t); } }
-
-    public float PositionOnNode { get { return t; } }
+    public NavNodeConnection Prev { get { return connections[0]; } set { connections[0] = value; } }
+    public NavNodeConnection Next { get { return connections[1]; } set { connections[1] = value; } }
+    public NavNodeConnection[] Connections { get { return connections; } }
+    public Vector2 Position { get { return position; } }
+    public Vector2 Tangent { get { return new Vector2(normal.y, -normal.x); } }
+    public Vector2 Normal { get { return normal; } }
 
     [SerializeField]
-    private INavNode navNode;
+    private NavNodeConnection[] connections;
     [SerializeField]
-    private float t;
+    private Vector2 position;
+    [SerializeField]
+    private Vector2 normal;
 
-    public NavPosition2d(INavNode navNode, float t)
+    public NavPosition2d(Vector2 position, Vector2 normal, NavNodeConnection prev, NavNodeConnection next)
     {
-        this.navNode = navNode;
-        this.t = t;
+        this.connections = new NavNodeConnection[2];
+        this.Prev = prev;
+        this.Next = next;
+        this.position = position;
+        this.normal = normal;
     }
 }

@@ -16,6 +16,9 @@ public class GizmosQueue : MonoBehaviour
     [SerializeField]
     private float timeScale;
 
+    [SerializeField]
+    private bool enableDrawing;
+
     private double lastGizmosCallTime;
 
     private void OnEnable()
@@ -24,7 +27,8 @@ public class GizmosQueue : MonoBehaviour
         lastGizmosCallTime = EditorApplication.timeSinceStartup;
     }
 
-    public void Enqueue(float time, Action drawFunc) {
+    public void Enqueue(float time, Action drawFunc)
+    {
         if (commands == null)
             commands = new LinkedList<GizmosCommand>();
 
@@ -45,7 +49,8 @@ public class GizmosQueue : MonoBehaviour
 
         while (node != null)
         {
-            node.Value.drawGizmos();
+            if (enableDrawing)
+                node.Value.drawGizmos();
             node.Value.lifeTime -= (float)delta * timeScale;
             if (node.Value.lifeTime <= 0)
             {
@@ -65,7 +70,8 @@ public class GizmosQueue : MonoBehaviour
 
 }
 
-class GizmosCommand {
+class GizmosCommand
+{
     public float lifeTime;
     public Action drawGizmos;
 

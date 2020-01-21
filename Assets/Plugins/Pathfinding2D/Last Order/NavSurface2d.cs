@@ -34,6 +34,10 @@ public class NavSurface2d : MonoBehaviour
     int floatToIntMult = 1000;
     [SerializeField]
     bool drawUnionPolygons;
+    [SerializeField]
+    bool drawNavSegments;
+    [SerializeField]
+    bool drawNavNodes;
 
     private PolygonSet polygonSet;
     [SerializeField, ReadOnly]
@@ -46,16 +50,6 @@ public class NavSurface2d : MonoBehaviour
         if (navAgentTypes == null || navAgentTypes.Length > 0)
         {
             navLines = it.Mark(polygonSet, navAgentTypes[0]);
-
-            // convert coordinates back
-            foreach (var line in navLines)
-            {
-                foreach (var segment in line.segments)
-                {
-                    segment.start /= floatToIntMult;
-                }
-            }
-
             Debug.Log("Created " + navLines.Count + " navlines");
         }
         else
@@ -64,24 +58,22 @@ public class NavSurface2d : MonoBehaviour
         }
     }
 
-    public bool NearestNavPosition2d(Vector2 point, out NavPosition2d navPosition)
+    public bool FindNavPosition2d(Vector2 point, out NavPosition2d navPosition)
     {
         float minDistance = float.MaxValue;
-        NavLine closestNavLine = null;
-        int closestNavLineSegmentIndex = -1;
+        NavSegment closestSegment = null;
         Vector2 closestPoint = Vector2.zero;
 
         foreach (var line in navLines)
         {
-            int segIndex;
+            NavSegment seg;
             Vector2 p;
-            float dist = line.DistanceToPoint(point, out segIndex, out p);
+            float dist = line.DistanceToPoint(point, out seg, out p);
 
             if (dist < minDistance)
             {
                 minDistance = dist;
-                closestNavLine = line;
-                closestNavLineSegmentIndex = segIndex;
+                closestSegment = seg;
                 closestPoint = p;
             }
         }
@@ -93,15 +85,18 @@ public class NavSurface2d : MonoBehaviour
         }
         else
         {
+            NavNodeConnection prevConn;
+            NavNodeConnection nextConn;
+            closestSegment.GetConnectionsFor(closestPoint, out prevConn, out nextConn);
 
-            navPosition = new NavPosition2d(closestNavLine, closestNavLineSegmentIndex, closestPoint);
+            navPosition = new NavPosition2d(closestPoint, closestSegment.Normal, prevConn, nextConn);
             return true;
         }
     }
 
     public void AddLink(OffNavLineLink link)
-    { 
-        
+    {
+
     }
 
     private PolygonSet CollectNavigationPolygons()
@@ -158,39 +153,64 @@ public class NavSurface2d : MonoBehaviour
     {
         if (navLines != null)
         {
-            Gizmos.color = Color.green;
-            foreach (var line in navLines)
+            try
             {
-                for (int iSeg = 0; iSeg < line.segments.Length - 1; iSeg++)
+                if (drawNavSegments)
                 {
-                    Gizmos.DrawLine(line.segments[iSeg].start, line.segments[iSeg + 1].start);
-                }
-
-                // draw special beginning and end marker
-                if (line.isClosed)
-                {
-                    Gizmos.DrawLine(line.segments[0].start, line.segments[line.segments.Length - 1].start);
-                }
-                else
-                {
-                    if (line.segments.Length >= 2)
+                    Gizmos.color = Color.green;
+                    foreach (var line in navLines)
                     {
-                        var start = line.segments[0].start;
-                        var start2 = line.segments[1].start;
-                        var normal = (start2 - start);
-                        normal = new Vector2(-normal.y, normal.x).normalized;
+                        for (int iSeg = 0; iSeg < line.segments.Length - 1; iSeg++)
+                        {
+                            Gizmos.DrawLine(line.segments[iSeg].Start, line.segments[iSeg + 1].Start);
+                        }
 
-                        Gizmos.DrawLine(start + (normal * -0.2f), start + (normal * 0.2f));
+                        // draw special beginning and end marker
+                        if (line.segments.Length >= 2)
+                        {
+                            var start = line.segments[0].Start;
+                            var start2 = line.segments[1].Start;
+                            var normal = (start2 - start);
+                            normal = new Vector2(-normal.y, normal.x).normalized;
 
-                        var end = line.segments[line.segments.Length - 1].start;
-                        var end2 = line.segments[line.segments.Length - 2].start;
+                            Gizmos.DrawLine(start + (normal * -0.2f), start + (normal * 0.2f));
 
-                        normal = (end2 - end);
-                        normal = new Vector2(-normal.y, normal.x).normalized;
+                            var end = line.segments[line.segments.Length - 1].Start;
+                            var end2 = line.segments[line.segments.Length - 2].Start;
 
-                        Gizmos.DrawLine(end + (normal * -0.2f), end + (normal * 0.2f));
+                            normal = (end2 - end);
+                            normal = new Vector2(-normal.y, normal.x).normalized;
+
+                            Gizmos.DrawLine(end + (normal * -0.2f), end + (normal * 0.2f));
+                        }
                     }
                 }
+                if (drawNavNodes)
+                {
+                    Gizmos.color = Color.green;
+                    foreach (var line in navLines)
+                    {
+                        for (int iSeg = 0; iSeg < line.segments.Length - 1; iSeg++)
+                        {
+                            var node = line.segments[iSeg].NavNode;
+                            if (node.Next.IsEnabled() && node.Next.node != null)
+                            {
+                                Gizmos.color = ABC.Utility.LinearBlendFromGreenToYellowToRed(node.Next.costs / 10f);
+                                ABC.Utility.DrawBezierConnection(node.Position, node.Next.node.Position, false);
+                            }
+
+                            if (node.Prev.IsEnabled() && node.Prev.node != null)
+                            {
+                                Gizmos.color = ABC.Utility.LinearBlendFromGreenToYellowToRed(node.Prev.costs / 10f);
+                                ABC.Utility.DrawBezierConnection(node.Position, node.Prev.node.Position, false);
+                            }
+                        }
+                    }
+                }
+            }
+            catch(System.Exception e) {
+                Debug.LogException(e);
+                navLines = null;
             }
         }
 

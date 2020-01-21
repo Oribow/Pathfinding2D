@@ -2,65 +2,56 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public interface INavNode
-{
-    List<NavNodeConnection> Connections();
+public interface INavNode2d {
+    Vector2 Position { get; }
+    NavNodeConnection[] Connections { get; }
 }
 
-public class NavNode : INavNode
+[System.Serializable]
+public class NavNode2d : INavNode2d
 {
-    public NavNodeConnection A { get { return connections[0]; } set { connections[0] = value; } }
-    public NavNodeConnection B { get { return connections[1]; } set { connections[1] = value; } }
-
-    private Vector2 position;
-    private NavNodeConnection[] connections;
-
-    public NavNode(Vector2 position, NavNodeConnection a, NavNodeConnection b)
-    {
-        this.position = position;
-        this.connections = new NavNodeConnection[2];
-        connections[0] = a;
-        connections[1] = b;
-    }
-
-    public NavNodeConnection[] Connections()
-    {
-        return connections;
-    }
-}
-
-public class NavNodeLink : INavNode
-{
-    public NavNodeConnection A { get { return connections[0]; } set { connections[0] = value; } }
-    public NavNodeConnection B { get { return connections[1]; } set { connections[1] = value; } }
+    // assumption: 
+    // segment nodes must have 0 - 2 connection
+    // link nodes must have 3 connections. (0 = prev, 1 = next, |2 = link|)
+    public Vector2 Position { get { return position; } }
+    public NavNodeConnection Prev { get { return connections[0]; } set { connections[0] = value; } }
+    public NavNodeConnection Next { get { return connections[1]; } set { connections[1] = value; } }
     public NavNodeConnection Link { get { return connections[2]; } set { connections[2] = value; } }
+    public NavNodeConnection[] Connections { get { return connections; } }
 
+    [SerializeField]
     private Vector2 position;
+    [SerializeField]
     private NavNodeConnection[] connections;
 
-    public NavNodeLink(Vector2 position, NavNodeConnection a, NavNodeConnection link, NavNodeConnection b)
+    public NavNode2d(Vector2 pos, bool isThreeWay)
     {
-        this.position = position;
-        connections = new NavNodeConnection[3];
-        connections[0] = a;
-        connections[1] = b;
-        connections[2] = link;
-    }
-
-    public NavNodeConnection[] Connections()
-    {
-        return connections;
+        this.position = pos;
+        this.connections = new NavNodeConnection[isThreeWay ? 3 : 2];
+        for (int i = 0; i < this.Connections.Length; i++)
+        {
+            this.connections[i].costs = -1;
+        }
     }
 }
 
+[System.Serializable]
 public struct NavNodeConnection
 {
-    public INavNode end;
+    [System.NonSerialized]
+    public NavNode2d node;
+    // if costs < 0, then the connection is disabled and node could be null
+    [SerializeField]
     public float costs;
 
-    public NavNodeConnection(INavNode end, float costs)
+    public NavNodeConnection(NavNode2d node, float costs)
     {
-        this.end = end;
+        this.node = node;
         this.costs = costs;
+    }
+
+    public bool IsEnabled()
+    {
+        return costs >= 0;
     }
 }
