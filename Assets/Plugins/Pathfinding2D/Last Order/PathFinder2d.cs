@@ -21,7 +21,7 @@ public class PathFinder2d : MonoBehaviour
 
 class AStar {
     FastPriorityQueue<PathNode> openList;
-    List<PathNode> closedNodes;
+    HashSet<NavNode2d> closedNodes;
 
     public NavPath2d FindPath(NavPosition2d start, NavPosition2d end)
     {
@@ -37,8 +37,10 @@ class AStar {
         {
             var node = openList.Dequeue();
             if (node.navNode == end)
-            { 
+            {
                 // found path to correct node
+            }
+            else {
 
             }
 
@@ -46,6 +48,16 @@ class AStar {
 
         }
         return null;
+    }
+
+    private void ConsiderConnection(PathNode parent, NavNodeConnection conn)
+    {
+        if (closedNodes.Contains(conn.goalNode))
+            return;
+
+        float tentativeCosts = parent.costSoFar + conn.costs;
+
+        if (openList.Contains())
     }
 
     private float Costs(Vector2 pos, Vector2 goal)
@@ -58,9 +70,9 @@ class PathNode : FastPriorityQueueNode
 {
     public float costSoFar;
     public PathNode parent;
-    public INavNode2d navNode;
+    public NavNode2d navNode;
 
-    public PathNode(INavNode2d navNode, float costSoFar) {
+    public PathNode(NavNode2d navNode, float costSoFar) {
         this.costSoFar = costSoFar;
         this.navNode = navNode;
     }

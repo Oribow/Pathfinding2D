@@ -3,28 +3,35 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
-public class NavPosition2d : INavNode2d
+public class NavPosition2d : NavNode2d
 {
-    public NavNodeConnection Prev { get { return connections[0]; } set { connections[0] = value; } }
-    public NavNodeConnection Next { get { return connections[1]; } set { connections[1] = value; } }
-    public NavNodeConnection[] Connections { get { return connections; } }
-    public Vector2 Position { get { return position; } }
-    public Vector2 Tangent { get { return new Vector2(normal.y, -normal.x); } }
-    public Vector2 Normal { get { return normal; } }
+    public Vector2 Tangent { get { return segment.DirNormalized; } }
+    public Vector2 Normal { get { return new Vector2(-segment.DirNormalized.y, segment.DirNormalized.x); } }
 
     [SerializeField]
-    private NavNodeConnection[] connections;
-    [SerializeField]
-    private Vector2 position;
-    [SerializeField]
-    private Vector2 normal;
+    private NavSegment segment;
 
-    public NavPosition2d(Vector2 position, Vector2 normal, NavNodeConnection prev, NavNodeConnection next)
+    public NavPosition2d(Vector2 position, NavSegment segment): base(position, false)
     {
-        this.connections = new NavNodeConnection[2];
-        this.Prev = prev;
-        this.Next = next;
-        this.position = position;
-        this.normal = normal;
+        this.segment = segment;
+    }
+
+    public void BuildConnections()
+    {
+        NavNodeConnection prevConn;
+        NavNodeConnection nextConn;
+        segment.GetConnectionsFor(this.Position, out prevConn, out nextConn);
+        this.Prev = prevConn;
+        this.Next = nextConn;
+    }
+
+    public void InsertIntoGraph()
+    {
+        segment.InsertNode(this);
+    }
+
+    public void RemoveFromGraph()
+    {
+        segment.RemoveNode(this);
     }
 }

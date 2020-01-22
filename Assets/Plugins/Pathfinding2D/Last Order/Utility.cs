@@ -32,20 +32,22 @@ namespace ABC
             return (1 - t) * (1 - t) * a + 2 * (1 - t) * t * b + t * t * c;
         }
 
-        public static void DrawArrow(Vector2 pos, Vector2 dir)
+        public static void DrawArrow(Vector2 pos, Vector2 dir, float length)
         {
-            Vector2 normal = new Vector2(-dir.y, dir.x).normalized * 0.2f;
+            dir.Normalize();
+            Vector2 normal = new Vector2(-dir.y, dir.x) * length;
             Gizmos.DrawLine(pos - normal, pos + normal);
-            Gizmos.DrawLine(pos - normal, pos + dir);
-            Gizmos.DrawLine(pos + normal, pos + dir);
+            Gizmos.DrawLine(pos - normal, pos + dir * length);
+            Gizmos.DrawLine(pos + normal, pos + dir * length);
         }
 
         public static void DrawBezierConnection(Vector2 start, Vector2 end, bool biDirectional)
         {
             Vector2 cp;
             var tangent = (end - start);
-            var normal = new Vector2(-tangent.y, tangent.x).normalized;
-            cp = start + tangent * 0.5f + normal;
+            var length = tangent.magnitude;
+            var normal = new Vector2(-tangent.y, tangent.x) / length;
+            cp = start + tangent * 0.5f + normal * (length / 5f);
 
             Vector2 prev = start;
             const float numberOfSegments = 5;
@@ -58,11 +60,12 @@ namespace ABC
 
             //draw arrows
             Vector2 p = end + (QuadraticBezierCurve((numberOfSegments - 1) / numberOfSegments, start, cp, end) - end).normalized * 0.3f;
-            ABC.Utility.DrawArrow(p, end - p);
+            float arrowLength = length / 30f;
+            DrawArrow(p, end - p, arrowLength);
             if (biDirectional)
             {
                 p = start + (QuadraticBezierCurve(1 / numberOfSegments, start, cp, end) - start).normalized * 0.3f;
-                DrawArrow(p, start - p);
+                DrawArrow(p, start - p, arrowLength);
             }
         }
 

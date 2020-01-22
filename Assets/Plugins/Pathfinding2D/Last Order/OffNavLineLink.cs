@@ -25,9 +25,13 @@ public class OffNavLineLink : MonoBehaviour
 
     private void Start()
     {
-        var surface = GetComponentInParent<NavSurface2d>();
-        if (surface != null) { 
-            
+        UpdateLink();
+        if (navPosStart != null) {
+            navPosStart.InsertIntoGraph();
+        }
+        if (navPosEnd != null)
+        {
+            navPosEnd.InsertIntoGraph();
         }
     }
 
@@ -40,8 +44,14 @@ public class OffNavLineLink : MonoBehaviour
             return;
         }
 
-        surface.FindNavPosition2d(start.position, out navPosStart);
-        surface.FindNavPosition2d(end.position, out navPosEnd);
+        if (!surface.FindNavPosition2d(start.position, out navPosStart))
+        {
+            Debug.LogError("Couldn't find start nav position.");
+        }
+        if (!surface.FindNavPosition2d(end.position, out navPosEnd))
+        {
+            Debug.LogError("Couldn't find end nav position.");
+        }
     }
 
     void OnDrawGizmos()

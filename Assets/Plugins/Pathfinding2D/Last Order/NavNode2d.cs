@@ -28,10 +28,6 @@ public class NavNode2d : INavNode2d
     {
         this.position = pos;
         this.connections = new NavNodeConnection[isThreeWay ? 3 : 2];
-        for (int i = 0; i < this.Connections.Length; i++)
-        {
-            this.connections[i].costs = -1;
-        }
     }
 }
 
@@ -39,19 +35,19 @@ public class NavNode2d : INavNode2d
 public struct NavNodeConnection
 {
     [System.NonSerialized]
-    public NavNode2d node;
+    public NavNode2d goalNode;
     // if costs < 0, then the connection is disabled and node could be null
     [SerializeField]
     public float costs;
 
     public NavNodeConnection(NavNode2d node, float costs)
     {
-        this.node = node;
+        this.goalNode = node;
         this.costs = costs;
     }
 
     public bool IsEnabled()
     {
-        return costs >= 0;
+        return goalNode != null;
     }
 }

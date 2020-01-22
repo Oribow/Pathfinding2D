@@ -213,7 +213,7 @@ public class IntersectionTester
             if (lastSegNode.Value.end != 1 || nextSegNode.Value.start != 0 || (lastSeg + 1 != nextSeg && lastSeg != nextSeg + obstructableContour.Length - 1))
             {
                 // segments not connected, flush
-                inOutNavLines.Add(new NavLine(navLineSegments));
+                inOutNavLines.Add(new NavLine(navLineSegments, false));
                 navLineSegments.Clear();
             }
         } while (nextSeg != -1 && nextSegNode != startSegNode);
@@ -222,7 +222,7 @@ public class IntersectionTester
         if (firstLineIndex == inOutNavLines.Count && navLineSegments.Count > 0)
         {
             //whole contour is walkable
-            inOutNavLines.Add(new NavLine(navLineSegments));
+            inOutNavLines.Add(new NavLine(navLineSegments, true));
         }
         else if (firstLineIndex < inOutNavLines.Count && nextSeg != -1 && (lastSeg + 1 == nextSeg || nextSeg + obstructableContour.Length - 1 == lastSeg) && nextSegNode.Value.start == 0 && lastSegNode.Value.end == 1)
         {
@@ -233,7 +233,7 @@ public class IntersectionTester
             combinedSegments.AddRange(navLineSegments);
             combinedSegments.AddRange(firstLine.segments);
 
-            inOutNavLines[firstLineIndex] = new NavLine(combinedSegments);
+            inOutNavLines[firstLineIndex] = new NavLine(combinedSegments, false);
         }
     }
 

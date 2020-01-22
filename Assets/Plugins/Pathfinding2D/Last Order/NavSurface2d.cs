@@ -43,6 +43,17 @@ public class NavSurface2d : MonoBehaviour
     [SerializeField, ReadOnly]
     private List<NavLine> navLines;
 
+    private void Awake()
+    {
+        if (navLines != null)
+        {
+            foreach (var line in navLines)
+            {
+                line.BuildNavGraph();
+            }
+        }
+    }
+
     public void Bake()
     {
         polygonSet = CollectNavigationPolygons();
@@ -85,11 +96,7 @@ public class NavSurface2d : MonoBehaviour
         }
         else
         {
-            NavNodeConnection prevConn;
-            NavNodeConnection nextConn;
-            closestSegment.GetConnectionsFor(closestPoint, out prevConn, out nextConn);
-
-            navPosition = new NavPosition2d(closestPoint, closestSegment.Normal, prevConn, nextConn);
+            navPosition = new NavPosition2d(closestPoint, closestSegment);
             return true;
         }
     }
@@ -160,13 +167,13 @@ public class NavSurface2d : MonoBehaviour
                     Gizmos.color = Color.green;
                     foreach (var line in navLines)
                     {
-                        for (int iSeg = 0; iSeg < line.segments.Length - 1; iSeg++)
+                        for (int iSeg = 0; iSeg < line.segments.Length; iSeg++)
                         {
-                            Gizmos.DrawLine(line.segments[iSeg].Start, line.segments[iSeg + 1].Start);
+                            Gizmos.DrawLine(line.segments[iSeg].Start, line.segments[iSeg].End);
                         }
 
                         // draw special beginning and end marker
-                        if (line.segments.Length >= 2)
+                        if (line.segments.Length >= 2 && !line.isClosed)
                         {
                             var start = line.segments[0].Start;
                             var start2 = line.segments[1].Start;
@@ -185,30 +192,32 @@ public class NavSurface2d : MonoBehaviour
                         }
                     }
                 }
-                if (drawNavNodes)
+                if (drawNavNodes && Application.isPlaying)
                 {
-                    Gizmos.color = Color.green;
                     foreach (var line in navLines)
                     {
-                        for (int iSeg = 0; iSeg < line.segments.Length - 1; iSeg++)
+                        NavNode2d node = line.segments[0];
+                        int safetyCounter = 0;
+                        do
                         {
-                            var node = line.segments[iSeg].NavNode;
-                            if (node.Next.IsEnabled() && node.Next.node != null)
+                            if (node.Next.IsEnabled())
                             {
                                 Gizmos.color = ABC.Utility.LinearBlendFromGreenToYellowToRed(node.Next.costs / 10f);
-                                ABC.Utility.DrawBezierConnection(node.Position, node.Next.node.Position, false);
+                                ABC.Utility.DrawBezierConnection(node.Position, node.Next.goalNode.Position, false);
                             }
-
-                            if (node.Prev.IsEnabled() && node.Prev.node != null)
+                            if (node.Prev.IsEnabled())
                             {
                                 Gizmos.color = ABC.Utility.LinearBlendFromGreenToYellowToRed(node.Prev.costs / 10f);
-                                ABC.Utility.DrawBezierConnection(node.Position, node.Prev.node.Position, false);
+                                ABC.Utility.DrawBezierConnection(node.Position, node.Prev.goalNode.Position, false);
                             }
-                        }
+                            if (node.Next.IsEnabled())
+                                node = node.Next.goalNode;
+                        } while (++safetyCounter < 1000);
                     }
                 }
             }
-            catch(System.Exception e) {
+            catch (System.Exception e)
+            {
                 Debug.LogException(e);
                 navLines = null;
             }
