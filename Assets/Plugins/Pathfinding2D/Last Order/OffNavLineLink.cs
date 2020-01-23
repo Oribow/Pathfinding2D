@@ -6,9 +6,6 @@ using NavData2d.Editor;
 
 public class OffNavLineLink : MonoBehaviour
 {
-    public NavPosition2d NavPosStart { get { return navPosStart; } }
-    public NavPosition2d NavPosEnd { get { return navPosEnd; } }
-
     [SerializeField]
     private Transform start;
     [SerializeField]
@@ -19,31 +16,31 @@ public class OffNavLineLink : MonoBehaviour
     private bool biDirectional = true;
 
     [SerializeField, ReadOnly]
-    private NavPosition2d navPosStart;
+    private LinkPoint linkStart;
     [SerializeField, ReadOnly]
-    private NavPosition2d navPosEnd;
+    private LinkPoint linkEnd;
 
-    private void Start()
-    {
-        UpdateLink();
-        if (navPosStart != null) {
-            navPosStart.InsertIntoGraph();
-        }
-        if (navPosEnd != null)
-        {
-            navPosEnd.InsertIntoGraph();
-        }
-    }
+    public LinkPoint LinkStart { get { return linkStart; } }
+    public LinkPoint LinkEnd { get { return linkEnd; } }
 
     public void UpdateLink()
     {
+        if (linkStart != null && linkStart.navSurface != null)
+        {
+            linkStart.navSurface.RemoveLinkStartPoint(linkStart);
+        }
+        if (linkEnd != null && linkEnd.navSurface != null)
+        {
+            linkEnd.navSurface.RemoveLinkEndPoint(linkStart);
+        }
+
         var surface = GetComponentInParent<NavSurface2d>();
         if (surface == null)
         {
             Debug.LogError("Couldn't find a NavSurface2d component on parents");
             return;
         }
-
+        NavPosition2d navPosStart, navPosEnd;
         if (!surface.FindNavPosition2d(start.position, out navPosStart))
         {
             Debug.LogError("Couldn't find start nav position.");
@@ -52,35 +49,78 @@ public class OffNavLineLink : MonoBehaviour
         {
             Debug.LogError("Couldn't find end nav position.");
         }
+        if (navPosStart != null && navPosEnd != null)
+        {
+            linkStart = new LinkPoint(navPosStart, this, true);
+            linkEnd = new LinkPoint(navPosEnd, this, false);
+
+            surface.AddLinkStartPoint(linkStart);
+            surface.AddLinkEndPoint(linkEnd);
+
+            if (biDirectional)
+            {
+                surface.AddLinkStartPoint(linkEnd);
+                surface.AddLinkEndPoint(linkStart);
+            }
+        }
     }
 
     void OnDrawGizmos()
     {
         if (start != null)
-            DrawLinkPosition(navPosStart, start.position);
+            DrawLinkPosition(linkStart, start.position);
         if (end != null)
-            DrawLinkPosition(navPosEnd, end.position);
+            DrawLinkPosition(linkEnd, end.position);
 
         if (end != null && start != null)
         {
-            Vector2 start = navPosStart == null ? (Vector2)this.start.position : navPosStart.Position;
-            Vector2 end = navPosEnd == null ? (Vector2)this.end.position : navPosEnd.Position;
+            Vector2 start = linkStart == null ? (Vector2)this.start.position : linkStart.Position;
+            Vector2 end = linkEnd == null ? (Vector2)this.end.position : linkEnd.Position;
 
             // draw connection
             ABC.Utility.DrawBezierConnection(start, end, biDirectional);
         }
     }
 
-    private void DrawLinkPosition(NavPosition2d navPos, Vector2 orgPos)
+    private void DrawLinkPosition(LinkPoint linkP, Vector2 orgPos)
     {
         Gizmos.DrawCube(orgPos, Vector3.one * 0.1f);
-        if (navPos != null)
+        if (linkP != null)
         {
-            Vector2 segmentTangent = navPos.Tangent * 0.2f;
-            Gizmos.DrawLine(navPos.Position - segmentTangent, navPos.Position + segmentTangent);
+            Vector2 segmentTangent = linkP.Segment.Tangent * 0.2f;
+            Gizmos.DrawLine(linkP.Position - segmentTangent, linkP.Position + segmentTangent);
 
-            Vector2 segmentNormal = navPos.Normal * 0.1f;
-            Gizmos.DrawLine(navPos.Position - segmentTangent + segmentNormal, navPos.Position + segmentTangent + segmentNormal);
+            Vector2 segmentNormal = linkP.Segment.Normal * 0.1f;
+            Gizmos.DrawLine(linkP.Position - segmentTangent + segmentNormal, linkP.Position + segmentTangent + segmentNormal);
         }
+    }
+}
+
+[Serializable]
+public class LinkPoint : NavPosition2d {
+    public NavSegment Segment { get { return navSurface.GetSegment(LineIndex, SegmentIndex); } }
+    public OffNavLineLink Link { get { return link; } }
+    public LinkPoint OtherPoint { get { return isStart ? link.LinkEnd : link.LinkStart; } }
+
+    [System.NonSerialized]
+    public int navNodeIndex;
+
+    [SerializeField]
+    OffNavLineLink link;
+    [SerializeField]
+    public NavSurface2d navSurface;
+    [SerializeField]
+    bool isStart;
+
+    public LinkPoint(Vector2 position, int lineIndex, int segmentIndex, OffNavLineLink link, bool isStart) : base(position, lineIndex, segmentIndex)
+    {
+        this.link = link;
+        this.isStart = isStart;
+    }
+
+    public LinkPoint( NavPosition2d navPos,OffNavLineLink link, bool isStart): base(navPos.Position, navPos.LineIndex, navPos.SegmentIndex)
+    {
+        this.link = link;
+        this.isStart = isStart;
     }
 }

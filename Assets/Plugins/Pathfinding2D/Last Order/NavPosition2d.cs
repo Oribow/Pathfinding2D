@@ -3,35 +3,23 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
-public class NavPosition2d : NavNode2d
+public class NavPosition2d
 {
-    public Vector2 Tangent { get { return segment.DirNormalized; } }
-    public Vector2 Normal { get { return new Vector2(-segment.DirNormalized.y, segment.DirNormalized.x); } }
+    public int LineIndex { get { return lineIndex; } }
+    public Vector2 Position { get { return position; } }
+    public int SegmentIndex { get { return segmentIndex; } }
 
     [SerializeField]
-    private NavSegment segment;
+    private int segmentIndex;
+    [SerializeField]
+    private int lineIndex;
+    [SerializeField]
+    private Vector2 position;
 
-    public NavPosition2d(Vector2 position, NavSegment segment): base(position, false)
+    public NavPosition2d(Vector2 position, int lineIndex, int segmentIndex)
     {
-        this.segment = segment;
-    }
-
-    public void BuildConnections()
-    {
-        NavNodeConnection prevConn;
-        NavNodeConnection nextConn;
-        segment.GetConnectionsFor(this.Position, out prevConn, out nextConn);
-        this.Prev = prevConn;
-        this.Next = nextConn;
-    }
-
-    public void InsertIntoGraph()
-    {
-        segment.InsertNode(this);
-    }
-
-    public void RemoveFromGraph()
-    {
-        segment.RemoveNode(this);
+        this.lineIndex = lineIndex;
+        this.segmentIndex = segmentIndex;
+        this.position = position;
     }
 }

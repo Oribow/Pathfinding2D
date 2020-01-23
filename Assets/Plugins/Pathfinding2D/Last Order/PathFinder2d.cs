@@ -30,6 +30,7 @@ class AStar {
         closedNodes.Clear();
         openList.Clear();
 
+        /*
         PathNode startNode = new PathNode(start, 0);
         openList.Enqueue(startNode, 0);
 
@@ -44,20 +45,20 @@ class AStar {
 
             }
 
-            closedNodes.Add(node);
+            //closedNodes.Add(node);
 
-        }
+        }*/
         return null;
     }
 
     private void ConsiderConnection(PathNode parent, NavNodeConnection conn)
     {
-        if (closedNodes.Contains(conn.goalNode))
-            return;
+        //if (closedNodes.Contains(conn.goalNode))
+        //    return;
 
         float tentativeCosts = parent.costSoFar + conn.costs;
 
-        if (openList.Contains())
+        //if (openList.Contains())
     }
 
     private float Costs(Vector2 pos, Vector2 goal)

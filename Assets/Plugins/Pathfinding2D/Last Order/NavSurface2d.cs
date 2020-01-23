@@ -43,15 +43,21 @@ public class NavSurface2d : MonoBehaviour
     [SerializeField, ReadOnly]
     private List<NavLine> navLines;
 
-    private void Awake()
+    [SerializeField, HideInInspector]
+    private List<LinkPoint> linkEPs;
+    [SerializeField, HideInInspector]
+    private List<LinkPoint> linkSPs;
+
+    public List<NavLine> NavLines { get { return navLines; } }
+
+    private void Start()
     {
-        if (navLines != null)
-        {
-            foreach (var line in navLines)
-            {
-                line.BuildNavGraph();
-            }
-        }
+        AddToNavGraph();
+    }
+
+    public NavSegment GetSegment(int lineIndex, int segmentIndex)
+    {
+        return this.navLines[lineIndex].segments[segmentIndex];
     }
 
     public void Bake()
@@ -62,6 +68,8 @@ public class NavSurface2d : MonoBehaviour
         {
             navLines = it.Mark(polygonSet, navAgentTypes[0]);
             Debug.Log("Created " + navLines.Count + " navlines");
+
+            UpdateLinks();
         }
         else
         {
@@ -72,12 +80,14 @@ public class NavSurface2d : MonoBehaviour
     public bool FindNavPosition2d(Vector2 point, out NavPosition2d navPosition)
     {
         float minDistance = float.MaxValue;
-        NavSegment closestSegment = null;
+        int closestSegment = -1;
+        int closestLine = -1;
         Vector2 closestPoint = Vector2.zero;
 
+        int lineIndex = 0;
         foreach (var line in navLines)
         {
-            NavSegment seg;
+            int seg;
             Vector2 p;
             float dist = line.DistanceToPoint(point, out seg, out p);
 
@@ -86,7 +96,9 @@ public class NavSurface2d : MonoBehaviour
                 minDistance = dist;
                 closestSegment = seg;
                 closestPoint = p;
+                closestLine = lineIndex;
             }
+            lineIndex++;
         }
 
         if (minDistance == float.MaxValue)
@@ -96,14 +108,153 @@ public class NavSurface2d : MonoBehaviour
         }
         else
         {
-            navPosition = new NavPosition2d(closestPoint, closestSegment);
+            navPosition = new NavPosition2d(closestPoint, closestLine, closestSegment);
             return true;
         }
     }
 
-    public void AddLink(OffNavLineLink link)
+    public void AddLinkEndPoint(LinkPoint linkEP)
     {
+        this.linkEPs.Add(linkEP);
+        linkEP.navSurface = this;
+    }
 
+    public void AddLinkStartPoint(LinkPoint linkSP)
+    {
+        this.linkSPs.Add(linkSP);
+        linkSP.navSurface = this;
+    }
+
+    public void RemoveLinkStartPoint(LinkPoint linkSP)
+    {
+        linkSPs.Remove(linkSP);
+        linkSP.navSurface = null;
+    }
+
+    public void RemoveLinkEndPoint(LinkPoint linkEP)
+    {
+        linkEPs.Remove(linkEP);
+        linkEP.navSurface = null;
+    }
+
+    private void AddToNavGraph()
+    {
+        var graph = NavGraph2d.Instance;
+        foreach (var line in navLines)
+        {
+            var segments = line.segments;
+            // create nav nodes for segments
+            foreach (var segment in segments)
+            {
+                var node = new NavNode2d(segment.Start, false);
+                segment.navNodeIndex = graph.AddNode(node);
+            }
+
+            int startIndex;
+            NavSegment prevSeg;
+            if (line.IsClosed)
+            {
+                startIndex = 0;
+                prevSeg = segments[line.segments.Length - 1];
+
+                var prevPrevSeg = segments[segments.Length - 2];
+                var node = graph.GetNode(prevSeg.navNodeIndex);
+                node.Prev = new NavNodeConnection(prevPrevSeg.navNodeIndex, prevPrevSeg.TotalTraversalCost);
+                node.Next = new NavNodeConnection(segments[0].navNodeIndex, prevSeg.TotalTraversalCost);
+            }
+            else
+            {
+                startIndex = 1;
+                prevSeg = segments[0];
+
+                NavSegment lastSegment = segments[segments.Length - 1];
+                NavNode2d prevLastNode = graph.GetNode(lastSegment.navNodeIndex);
+                NavNode2d lastNode = new NavNode2d(lastSegment.End, false);
+                line.lastNavNodeIndex = graph.AddNode(lastNode);
+
+                lastNode.Prev = new NavNodeConnection(lastSegment.navNodeIndex, lastSegment.TotalTraversalCost);
+                prevLastNode.Next = new NavNodeConnection(line.lastNavNodeIndex, lastSegment.TotalTraversalCost);
+
+                if (segments.Length >= 2)
+                    graph.GetNode(prevSeg.navNodeIndex).Next = new NavNodeConnection(segments[1].navNodeIndex, segments[0].TotalTraversalCost);
+            }
+
+            for (int iSeg = startIndex; iSeg < line.segments.Length - 1; iSeg++)
+            {
+                var seg = line.segments[iSeg];
+                var nextSeg = line.segments[iSeg + 1];
+
+                var node = graph.GetNode(seg.navNodeIndex);
+                node.Prev = new NavNodeConnection(prevSeg.navNodeIndex, prevSeg.TotalTraversalCost);
+                node.Next = new NavNodeConnection(nextSeg.navNodeIndex, seg.TotalTraversalCost);
+
+                prevSeg = seg;
+            }
+        }
+
+        foreach (var linkEP in linkEPs)
+        {
+            linkEP.navNodeIndex = NavGraph2d.Instance.AddLinkNode(linkEP.Position, linkEP.Segment);
+
+        }
+
+        foreach (var linkSP in linkSPs)
+        {
+            linkSP.navNodeIndex = NavGraph2d.Instance.AddLinkNode(linkSP.Position, linkSP.Segment);
+        }
+    }
+
+    private void RemoveFromNavGraph()
+    {
+        var graph = NavGraph2d.Instance;
+        // remove nav nodes and all connections to em
+        // 1. find all nav nodes this surface spawned and delete them
+        foreach (var line in navLines)
+        {
+            foreach (var seg in line.segments)
+            {
+                graph.RemoveNode(seg.navNodeIndex);
+            }
+            if (line.lastNavNodeIndex != 0)
+                graph.RemoveNode(line.lastNavNodeIndex);
+        }
+
+        // 2. go through all connections to the surface and delete them
+        foreach (var linkEp in linkEPs)
+        {
+            if (linkEp.OtherPoint.navSurface != this)
+                linkEp.OtherPoint.navSurface.RemoveLinkStartPoint(linkEp.OtherPoint);
+        }
+    }
+
+    private void UpdateLinks()
+    {
+        var epCopy = linkEPs.ToArray();
+        var spCopy = linkSPs.ToArray();
+
+        foreach (var l in linkEPs)
+        {
+            l.navSurface = null;
+        }
+        foreach (var l in linkSPs)
+        {
+            l.navSurface = null;
+        }
+
+        linkEPs.Clear();
+        linkSPs.Clear();
+
+        foreach (var l in epCopy)
+        {
+            if (l.navSurface == null)
+                l.Link.UpdateLink();
+        }
+
+        foreach (var l in spCopy)
+        {
+            if (l.navSurface == null)
+                l.Link.UpdateLink();
+        }
     }
 
     private PolygonSet CollectNavigationPolygons()
@@ -173,7 +324,7 @@ public class NavSurface2d : MonoBehaviour
                         }
 
                         // draw special beginning and end marker
-                        if (line.segments.Length >= 2 && !line.isClosed)
+                        if (line.segments.Length >= 2 && !line.IsClosed)
                         {
                             var start = line.segments[0].Start;
                             var start2 = line.segments[1].Start;
@@ -190,29 +341,6 @@ public class NavSurface2d : MonoBehaviour
 
                             Gizmos.DrawLine(end + (normal * -0.2f), end + (normal * 0.2f));
                         }
-                    }
-                }
-                if (drawNavNodes && Application.isPlaying)
-                {
-                    foreach (var line in navLines)
-                    {
-                        NavNode2d node = line.segments[0];
-                        int safetyCounter = 0;
-                        do
-                        {
-                            if (node.Next.IsEnabled())
-                            {
-                                Gizmos.color = ABC.Utility.LinearBlendFromGreenToYellowToRed(node.Next.costs / 10f);
-                                ABC.Utility.DrawBezierConnection(node.Position, node.Next.goalNode.Position, false);
-                            }
-                            if (node.Prev.IsEnabled())
-                            {
-                                Gizmos.color = ABC.Utility.LinearBlendFromGreenToYellowToRed(node.Prev.costs / 10f);
-                                ABC.Utility.DrawBezierConnection(node.Position, node.Prev.goalNode.Position, false);
-                            }
-                            if (node.Next.IsEnabled())
-                                node = node.Next.goalNode;
-                        } while (++safetyCounter < 1000);
                     }
                 }
             }

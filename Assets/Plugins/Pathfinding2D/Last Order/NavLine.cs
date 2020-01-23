@@ -5,10 +5,15 @@ using UnityEngine;
 [System.Serializable]
 public class NavLine
 {
+    public bool IsClosed { get { return isClosed; } }
+
     [SerializeField]
     public NavSegment[] segments;
-    [SerializeField]
-    public bool isClosed;
+
+    [System.NonSerialized]
+    public int lastNavNodeIndex;
+
+    private bool isClosed;
 
     public NavLine(List<NavSegment> segments, bool isClosed)
     {
@@ -17,61 +22,17 @@ public class NavLine
         Debug.Assert(isClosed == this.segments.Length >= 3);
     }
 
-    public void BuildNavGraph()
-    {
-        int startIndex;
-        NavSegment prevSeg;
-
-        if (isClosed)
-        {
-            startIndex = 0;
-            prevSeg = this.segments[this.segments.Length - 1];
-
-            prevSeg.Next = new NavNodeConnection(this.segments[0], prevSeg.CompleteTraversalCost);
-            prevSeg.Prev = new NavNodeConnection(this.segments[this.segments.Length - 2], prevSeg.CompleteTraversalCost);
-        }
-        else
-        {
-            startIndex = 1;
-            prevSeg = this.segments[0];
-
-            var lastSegment = this.segments[this.segments.Length - 1];
-            var lastNode = new NavNode2d(lastSegment.End, false);
-            lastNode.Prev = new NavNodeConnection(lastSegment, lastSegment.CompleteTraversalCost);
-            lastSegment.Next = new NavNodeConnection(lastNode, lastSegment.CompleteTraversalCost);
-
-            if (this.segments.Length >= 2)
-                this.segments[0].Next = new NavNodeConnection(this.segments[1], this.segments[0].CompleteTraversalCost);
-        }
-
-        for (int iSeg = startIndex; iSeg < this.segments.Length - 1; iSeg++)
-        {
-            var seg = this.segments[iSeg];
-            var nextSeg = this.segments[iSeg + 1];
-
-            seg.Prev = new NavNodeConnection(
-                prevSeg,
-                prevSeg.CompleteTraversalCost);
-
-            seg.Next = new NavNodeConnection(
-                nextSeg,
-                seg.CompleteTraversalCost);
-
-            prevSeg = seg;
-        }
-      }
-
-    public float DistanceToPoint(Vector2 point, out NavSegment closestSegment, out Vector2 closestPoint)
+    public float DistanceToPoint(Vector2 point, out int closestSegment, out Vector2 closestPoint)
     {
         float minDistance = float.MaxValue;
-        closestSegment = null;
+        closestSegment = -1;
         closestPoint = Vector2.zero;
 
         Vector2 a, b, ab, ap, projection;
         float l2, dot, dist;
 
         a = segments[0].Start;
-        NavSegment prevSeg = segments[0];
+        int prevSeg = 0;
         for (int iSeg = 1; iSeg < segments.Length; iSeg++)
         {
             b = segments[iSeg].Start;
@@ -90,11 +51,11 @@ public class NavLine
                 closestSegment = prevSeg;
                 closestPoint = projection;
             }
-            prevSeg = segments[iSeg];
+            prevSeg = iSeg;
             a = b;
         }
 
-        b = prevSeg.End;
+        b = segments[prevSeg].End;
         ab = (b - a);
         l2 = ab.sqrMagnitude;
 
@@ -116,28 +77,35 @@ public class NavLine
 }
 
 [System.Serializable]
-public class NavSegment : NavNode2d
+public class NavSegment
 {
-    public Vector2 Start { get { return Position; } }
+    public Vector2 Start { get { return start; } }
     public Vector2 End { get { return GetPosition(Length); } }
-    public float CompleteTraversalCost { get { return GetCosts(Length); } }
-    public Vector2 Normal { get { return new Vector2(-DirNormalized.y, DirNormalized.x); } }
-    public Vector2 DirNormalized { get { return dirNorm; } }
+    public float TotalTraversalCost { get { return GetCosts(Length); } }
+    public Vector2 Normal { get { return new Vector2(-Tangent.y, Tangent.x); } }
+    public Vector2 Tangent { get { return dirNorm; } }
     public float Length { get { return length; } }
 
+    [SerializeField]
+    Vector2 start;
     [SerializeField]
     private float length;
     [SerializeField]
     private Vector2 dirNorm;
 
-    public NavSegment(Vector2 start, Vector2 dirNorm, float length) : base(start, false)
+    [System.NonSerialized]
+    public int navNodeIndex;
+
+    public NavSegment(Vector2 start, Vector2 dirNorm, float length)
     {
+        this.start = start;
         this.dirNorm = dirNorm;
         this.length = length;
     }
 
-    public NavSegment(Vector2 start, Vector2 end) : base(start, false)
+    public NavSegment(Vector2 start, Vector2 end)
     {
+        this.start = start;
         var dir = end - start;
         this.length = dir.magnitude;
         this.dirNorm = dir / this.Length;
@@ -148,64 +116,28 @@ public class NavSegment : NavNode2d
         return Start + dirNorm * t;
     }
 
-    public void GetConnectionsFor(Vector2 point, out NavNodeConnection prevConn, out NavNodeConnection nextConn)
+    public void GetConnectionsFor(Vector2 position, out NavNodeConnection prevConn, out NavNodeConnection nextConn)
     {
-        float distanceSqr = (point - Start).sqrMagnitude;
-        Debug.Assert(distanceSqr <= length);
-        NavNode2d n = this;
-        do
-        {
-            n = n.Next.goalNode;
-        } while (distanceSqr > (n.Position - Start).sqrMagnitude);
-
-        var prev = n.Prev.goalNode;
-        var next = n;
-
-        float costsToNext = GetCosts(Vector2.Distance(next.Position, point));
-        float costsToPrev = GetCosts(Vector2.Distance(prev.Position, point));
-
-        prevConn = new NavNodeConnection(prev, costsToPrev);
-        nextConn = new NavNodeConnection(next, costsToNext);
-    }
-
-    // WARNING: (newNode.Position - Start).sqrMagnitude NEEDS to be <= length
-    public void InsertNode(NavNode2d newNode)
-    {
-        float distanceSqr = (newNode.Position - Start).sqrMagnitude;
+        float distanceSqr = (position - Start).sqrMagnitude;
         Debug.Assert(distanceSqr <= length * length);
-        NavNode2d n = this;
+
+        int nIndex = navNodeIndex;
+        NavNode2d n = NavGraph2d.Instance.GetNode(nIndex);
         do
         {
-            n = n.Next.goalNode;
+            nIndex = n.Next.goalNodeIndex;
+            n = NavGraph2d.Instance.GetNode(nIndex);
         } while (distanceSqr > (n.Position - Start).sqrMagnitude);
 
         // prev(l) <--> newlink <--> n
-        var prev = n.Prev.goalNode;
+        var prev = NavGraph2d.Instance.GetNode(n.Prev.goalNodeIndex);
         var next = n;
 
-        float costsToNext = GetCosts(Vector2.Distance(next.Position, newNode.Position));
-        float costsToPrev = GetCosts(Vector2.Distance(prev.Position, newNode.Position));
+        float costsToNext = GetCosts(Vector2.Distance(next.Position, position));
+        float costsToPrev = GetCosts(Vector2.Distance(prev.Position, position));
 
-        prev.Next = new NavNodeConnection(newNode, costsToPrev);
-        next.Prev = new NavNodeConnection(newNode, costsToNext);
-
-        newNode.Prev = new NavNodeConnection(prev, costsToPrev);
-        newNode.Next = new NavNodeConnection(next, costsToNext);
-    }
-
-    public void RemoveNode(NavNode2d node)
-    {
-        NavNode2d n = this;
-        do
-        {
-            n = n.Next.goalNode;
-        } while (n != node);
-        var prev = n.Prev.goalNode;
-        var next = n.Next.goalNode;
-
-        float distance = Vector2.Distance(prev.Position, next.Position);
-        prev.Next = new NavNodeConnection(next, distance);
-        next.Prev = new NavNodeConnection(prev, distance);
+        prevConn = new NavNodeConnection(n.Prev.goalNodeIndex, costsToPrev);
+        nextConn = new NavNodeConnection(nIndex, costsToNext);
     }
 
     public float GetCosts(float dist)

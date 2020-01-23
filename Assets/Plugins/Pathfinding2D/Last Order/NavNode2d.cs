@@ -8,7 +8,7 @@ public interface INavNode2d {
 }
 
 [System.Serializable]
-public class NavNode2d : INavNode2d
+public class NavNode2d : INavNode2d, System.IEquatable<NavNode2d>
 {
     // assumption: 
     // segment nodes must have 0 - 2 connection
@@ -29,25 +29,30 @@ public class NavNode2d : INavNode2d
         this.position = pos;
         this.connections = new NavNodeConnection[isThreeWay ? 3 : 2];
     }
+
+    public bool Equals(NavNode2d other)
+    {
+        return ReferenceEquals(this, other);
+    }
 }
 
 [System.Serializable]
 public struct NavNodeConnection
 {
     [System.NonSerialized]
-    public NavNode2d goalNode;
+    public int goalNodeIndex;
     // if costs < 0, then the connection is disabled and node could be null
     [SerializeField]
     public float costs;
 
-    public NavNodeConnection(NavNode2d node, float costs)
+    public NavNodeConnection(int goalNodeIndex, float costs)
     {
-        this.goalNode = node;
+        this.goalNodeIndex = goalNodeIndex;
         this.costs = costs;
     }
 
     public bool IsEnabled()
     {
-        return goalNode != null;
+        return goalNodeIndex != 0;
     }
 }
