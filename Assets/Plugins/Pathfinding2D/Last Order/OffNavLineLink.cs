@@ -3,6 +3,12 @@ using System.Collections;
 using System;
 using NavData2d.Editor;
 
+public interface INavLink {
+    bool IsBiDirectional { get; }
+    NavPosition2d StartPosition { get; }
+    NavPosition2d EndPosition { get; }
+}
+
 
 public class OffNavLineLink : MonoBehaviour
 {
@@ -19,7 +25,7 @@ public class OffNavLineLink : MonoBehaviour
     private LinkPoint linkStart;
     [SerializeField, ReadOnly]
     private LinkPoint linkEnd;
-
+    /*
     public LinkPoint LinkStart { get { return linkStart; } }
     public LinkPoint LinkEnd { get { return linkEnd; } }
 
@@ -93,9 +99,10 @@ public class OffNavLineLink : MonoBehaviour
             Vector2 segmentNormal = linkP.Segment.Normal * 0.1f;
             Gizmos.DrawLine(linkP.Position - segmentTangent + segmentNormal, linkP.Position + segmentTangent + segmentNormal);
         }
-    }
+    }*/
 }
 
+/*
 [Serializable]
 public class LinkPoint : NavPosition2d {
     public NavSegment Segment { get { return navSurface.GetSegment(LineIndex, SegmentIndex); } }
@@ -123,4 +130,15 @@ public class LinkPoint : NavPosition2d {
         this.link = link;
         this.isStart = isStart;
     }
+
+    public void Invalidate() {
+        this.navSurface = null;
+        navNodeIndex = -1;
+    }
+
+    public bool IsValid()
+    {
+        return this.navSurface != null;
+    }
 }
+*/

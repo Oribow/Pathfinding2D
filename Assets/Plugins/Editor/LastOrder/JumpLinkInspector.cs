@@ -13,7 +13,7 @@ public class JumpLinkInspector : Editor
         if (GUILayout.Button("Update"))
         {
             var navSurface = (OffNavLineLink)target;
-            navSurface.UpdateLink();
+            //navSurface.UpdateLink();
         }
     }
 }

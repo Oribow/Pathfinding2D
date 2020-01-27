@@ -13,7 +13,7 @@ public class NavSurface2dInspector : Editor
         if (GUILayout.Button("Bake"))
         {
             var navSurface = (NavSurface2d)target;
-            navSurface.Bake();
+            //navSurface.Bake();
         }
     }
 }

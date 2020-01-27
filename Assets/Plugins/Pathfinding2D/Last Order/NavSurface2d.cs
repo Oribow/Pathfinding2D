@@ -3,11 +3,24 @@ using System.Linq;
 using UnityEditor;
 using System.Collections.Generic;
 using NavGraph.Build;
+using System;
 
 [RequireComponent(typeof(RectTransform))]
-public class NavSurface2d : MonoBehaviour
+public class NavSurface2d : MonoBehaviour//, INavNodeConstructor
 {
+    /*
     const float pointNavLineMaxDistance = 3;
+
+    public static void AddLink(INavLink link)
+    {
+        LinkPoint startP = new LinkPoint(link.IsBiDirectional);
+        LinkPoint endP = new LinkPoint(true);
+
+        startP.other = endP;
+        endP.other = startP;
+
+
+    }
 
     private enum CollectObjectsMethod
     {
@@ -44,11 +57,11 @@ public class NavSurface2d : MonoBehaviour
     private List<NavLine> navLines;
 
     [SerializeField, HideInInspector]
-    private List<LinkPoint> linkEPs;
-    [SerializeField, HideInInspector]
-    private List<LinkPoint> linkSPs;
+    private List<LinkPoint> links;
 
     public List<NavLine> NavLines { get { return navLines; } }
+
+    public event EventHandler SurfaceBakeEvent;
 
     private void Start()
     {
@@ -69,7 +82,12 @@ public class NavSurface2d : MonoBehaviour
             navLines = it.Mark(polygonSet, navAgentTypes[0]);
             Debug.Log("Created " + navLines.Count + " navlines");
 
-            UpdateLinks();
+            foreach (var l in linkEPs)
+            {
+                l.Invalidate();
+            }
+            linkEPs.Clear();
+            SurfaceBakeEvent?.Invoke(this, null);
         }
         else
         {
@@ -113,22 +131,9 @@ public class NavSurface2d : MonoBehaviour
         }
     }
 
-    public void AddLinkEndPoint(LinkPoint linkEP)
+    public void AddLink(LinkPoint link)
     {
-        this.linkEPs.Add(linkEP);
-        linkEP.navSurface = this;
-    }
-
-    public void AddLinkStartPoint(LinkPoint linkSP)
-    {
-        this.linkSPs.Add(linkSP);
-        linkSP.navSurface = this;
-    }
-
-    public void RemoveLinkStartPoint(LinkPoint linkSP)
-    {
-        linkSPs.Remove(linkSP);
-        linkSP.navSurface = null;
+        this.links.Add(link);
     }
 
     public void RemoveLinkEndPoint(LinkPoint linkEP)
@@ -222,38 +227,7 @@ public class NavSurface2d : MonoBehaviour
         // 2. go through all connections to the surface and delete them
         foreach (var linkEp in linkEPs)
         {
-            if (linkEp.OtherPoint.navSurface != this)
-                linkEp.OtherPoint.navSurface.RemoveLinkStartPoint(linkEp.OtherPoint);
-        }
-    }
-
-    private void UpdateLinks()
-    {
-        var epCopy = linkEPs.ToArray();
-        var spCopy = linkSPs.ToArray();
-
-        foreach (var l in linkEPs)
-        {
-            l.navSurface = null;
-        }
-        foreach (var l in linkSPs)
-        {
-            l.navSurface = null;
-        }
-
-        linkEPs.Clear();
-        linkSPs.Clear();
-
-        foreach (var l in epCopy)
-        {
-            if (l.navSurface == null)
-                l.Link.UpdateLink();
-        }
-
-        foreach (var l in spCopy)
-        {
-            if (l.navSurface == null)
-                l.Link.UpdateLink();
+            linkEp.Invalidate();
         }
     }
 
@@ -378,5 +352,16 @@ public class NavSurface2d : MonoBehaviour
 
             prevPoint = v;
         }
+    }*/
+}
+
+class LinkPoint {
+    public int navNodeIndex;
+    public LinkPoint other;
+    public bool canBeGoal;
+
+    public LinkPoint(bool canBeGoal)
+    {
+        this.canBeGoal = canBeGoal;
     }
 }

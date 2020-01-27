@@ -13,6 +13,7 @@ public class NavGraph2d
         NavGraph2d.Instance = new NavGraph2d();
     }
 
+    public int NodeCount { get { return navNodes.Count; } }
     private FreeList<NavNode2d> navNodes;
 
     public NavGraph2d()
